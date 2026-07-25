@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💸</text></svg>' />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Costing — Documenting</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+        <style>
+            :root {
+                --paper: #e9e4d6;
+                --card: #fbf8f2;
+                --ink: #1c1a17;
+                --ink-soft: #5b564c;
+                --line: #d6cdb8;
+                --cyan: #00aeef;
+                --magenta: #e8138f;
+                --yellow: #ffce00;
+                --key: #141210;
+                --good: #1e7a4c;
+                --bad: #c1392b;
+                --warn: #b8860b;
+                --radius: 10px;
+                --shadow: 0 1px 2px rgba(28, 26, 23, 0.06), 0 6px 20px rgba(28, 26, 23, 0.06);
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                background: var(--paper);
+                background-image: radial-gradient(circle at 1px 1px, rgba(28, 26, 23, 0.05) 1px, transparent 1.4px);
+                background-size: 14px 14px;
+                color: var(--ink);
+                font-family: "Inter", sans-serif;
+                min-height: 100vh;
+                padding-bottom: 64px;
+            }
+
+            h1,
+            h2,
+            h3 {
+                font-family: "Space Grotesk", sans-serif;
+                margin: 0;
+                letter-spacing: -0.01em;
+            }
+            .mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
+
+            a,
+            button,
+            input,
+            select {
+                font-family: inherit;
+            }
+            button {
+                cursor: pointer;
+            }
+            :focus-visible {
+                outline: 2px solid var(--key);
+                outline-offset: 2px;
+            }
+
+            /* Corner registration crop marks — decorative, subtle */
+            .crop {
+                position: fixed;
+                width: 26px;
+                height: 26px;
+                opacity: 0.35;
+                pointer-events: none;
+                z-index: 1;
+            }
+            .crop svg {
+                width: 100%;
+                height: 100%;
+            }
+            .crop.tl {
+                top: 14px;
+                left: 14px;
+            }
+            .crop.tr {
+                top: 14px;
+                right: 14px;
+            }
+            .crop.bl {
+                bottom: 14px;
+                left: 14px;
+            }
+            .crop.br {
+                bottom: 14px;
+                right: 14px;
+            }
+            @media (max-width: 720px) {
+                .crop {
+                    display: none;
+                }
+            }
+
+            header.topbar {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+                padding: 14px 20px;
+                background: rgba(233, 228, 214, 0.92);
+                backdrop-filter: blur(6px);
+                border-bottom: 1px solid var(--line);
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .reg-mark {
+                width: 30px;
+                height: 30px;
+                flex: 0 0 auto;
+            }
+            .reg-mark circle {
+                mix-blend-mode: multiply;
+                transition: transform 0.35s ease;
+            }
+            .reg-mark .c {
+                fill: var(--cyan);
+            }
+            .reg-mark .m {
+                fill: var(--magenta);
+            }
+            .reg-mark .y {
+                fill: var(--yellow);
+            }
+            .reg-mark .k {
+                fill: var(--key);
+            }
+            body.privacy-on .reg-mark .c {
+                transform: translate(-2.4px, -1.4px);
+            }
+            body.privacy-on .reg-mark .m {
+                transform: translate(2.2px, -1.6px);
+            }
+            body.privacy-on .reg-mark .y {
+                transform: translate(0.4px, 2.4px);
+            }
+            body.privacy-on .reg-mark .k {
+                transform: translate(0, 0);
+            }
+
+            .brand h1 {
+                font-size: 1.25rem;
+            }
+            .brand p {
+                margin: 0;
+                font-size: 0.75rem;
+                color: var(--ink-soft);
+            }
+
+            .topbar .search {
+                flex: 1 1 220px;
+                min-width: 160px;
+            }
+            .topbar .search input {
+                width: 100%;
+                padding: 9px 12px;
+                border-radius: 8px;
+                border: 1px solid var(--line);
+                background: var(--card);
+                font-size: 0.9rem;
+                color: var(--ink);
+            }
+
+            .controls {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .privacy-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid var(--line);
+                background: var(--card);
+                font-size: 0.82rem;
+                font-weight: 600;
+                color: var(--ink);
+            }
+            .privacy-btn .reg-mark {
+                width: 20px;
+                height: 20px;
+            }
+            .icon-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                border: 1px solid var(--line);
+                background: var(--card);
+                font-size: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            main {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+
+            .add-bar {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin-bottom: 18px;
+            }
+            .btn-primary {
+                background: var(--key);
+                color: var(--card);
+                border: none;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }
+            .btn-primary:hover {
+                background: #000;
+            }
+            .btn-secondary {
+                background: transparent;
+                border: 1px solid var(--line);
+                color: var(--ink);
+                padding: 9px 14px;
+                border-radius: 8px;
+                font-size: 0.85rem;
+                font-weight: 500;
+            }
+
+            .stat-chips {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-left: auto;
+            }
+            .chip {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 7px 12px;
+                font-size: 0.72rem;
+                color: var(--ink-soft);
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                min-width: 86px;
+            }
+            .chip b {
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.95rem;
+                color: var(--ink);
+                text-transform: none;
+                letter-spacing: 0;
+            }
+
+            .product-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .product-card {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                box-shadow: var(--shadow);
+                padding: 14px 16px;
+            }
+            .card-main {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                flex-wrap: wrap;
+            }
+            .card-title {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                min-width: 130px;
+                flex: 1 1 160px;
+            }
+            .card-title h3 {
+                font-size: 1rem;
+            }
+            .card-title .meta {
+                font-size: 0.72rem;
+                color: var(--ink-soft);
+                display: flex;
+                gap: 6px;
+                align-items: center;
+            }
+            .tag {
+                background: rgba(28, 26, 23, 0.06);
+                padding: 1px 7px;
+                border-radius: 20px;
+            }
+
+            .card-figures {
+                display: grid;
+                grid-template-columns: repeat(5, minmax(64px, 1fr));
+                gap: 10px;
+                flex: 2 1 380px;
+            }
+            .figure {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .figure .label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--ink-soft);
+            }
+            .figure .value {
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.92rem;
+                font-weight: 600;
+            }
+            .value.profit-pos {
+                color: var(--good);
+            }
+            .value.profit-neg {
+                color: var(--bad);
+            }
+            .value.margin-warn {
+                color: var(--warn);
+            }
+
+            .priv-value {
+                position: relative;
+                cursor: pointer;
+                border-radius: 3px;
+            }
+            body.privacy-on .priv-value.amt:not(.peek) {
+                color: transparent !important;
+            }
+            body.privacy-on .priv-value.amt:not(.peek)::before {
+                content: "";
+                position: absolute;
+                inset: -1px -2px;
+                border-radius: 3px;
+                background-image: radial-gradient(circle, var(--ink) 1.1px, transparent 1.3px);
+                background-size: 6px 6px;
+                opacity: 0.55;
+            }
+            body.privacy-on.mask-percent .priv-value.pct:not(.peek) {
+                color: transparent !important;
+            }
+            body.privacy-on.mask-percent .priv-value.pct:not(.peek)::before {
+                content: "";
+                position: absolute;
+                inset: -1px -2px;
+                border-radius: 3px;
+                background-image: radial-gradient(circle, var(--ink) 1.1px, transparent 1.3px);
+                background-size: 6px 6px;
+                opacity: 0.55;
+            }
+
+            .card-actions {
+                display: flex;
+                gap: 6px;
+                margin-left: auto;
+            }
+            .card-actions button {
+                background: transparent;
+                border: 1px solid var(--line);
+                border-radius: 7px;
+                padding: 6px 10px;
+                font-size: 0.78rem;
+                color: var(--ink-soft);
+            }
+            .card-actions button:hover {
+                color: var(--ink);
+                border-color: var(--ink-soft);
+            }
+            .card-actions .delete-btn:hover {
+                color: var(--bad);
+                border-color: var(--bad);
+            }
+
+            .card-details {
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px dashed var(--line);
+            }
+            .cost-breakdown {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .cost-breakdown li {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.85rem;
+            }
+            .cost-breakdown li span:first-child {
+                color: var(--ink-soft);
+            }
+
+            .empty-state {
+                text-align: center;
+                color: var(--ink-soft);
+                padding: 40px 20px;
+                font-size: 0.9rem;
+            }
+
+            .hint {
+                text-align: center;
+                font-size: 0.7rem;
+                color: var(--ink-soft);
+                margin-top: 26px;
+            }
+
+            /* Modal */
+            .modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(20, 18, 16, 0.45);
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                padding: 30px 16px;
+                z-index: 50;
+                overflow-y: auto;
+            }
+            .modal-overlay[hidden] {
+                display: none;
+            }
+            .modal {
+                background: var(--card);
+                border-radius: 12px;
+                padding: 22px;
+                width: 100%;
+                max-width: 520px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .modal h2 {
+                font-size: 1.15rem;
+                margin-bottom: 4px;
+            }
+            .modal label {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                font-size: 0.8rem;
+                color: var(--ink-soft);
+                font-weight: 600;
+            }
+            .modal input[type="text"],
+            .modal input[type="number"],
+            .modal input:not([type]) {
+                padding: 9px 10px;
+                border: 1px solid var(--line);
+                border-radius: 7px;
+                font-size: 0.9rem;
+                color: var(--ink);
+                background: #fff;
+            }
+            .modal input[type="checkbox"] {
+                margin-right: 6px;
+            }
+            .checkbox-row {
+                flex-direction: row !important;
+                align-items: center;
+                font-weight: 500;
+            }
+
+            .cost-section {
+                border: 1px solid var(--line);
+                border-radius: 9px;
+                padding: 10px;
+            }
+            .cost-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+            .cost-header span {
+                font-size: 0.78rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--ink-soft);
+            }
+            .cost-header button {
+                background: transparent;
+                border: 1px dashed var(--line);
+                border-radius: 6px;
+                padding: 4px 9px;
+                font-size: 0.78rem;
+            }
+            #costLines {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .cost-line {
+                display: grid;
+                grid-template-columns: 1fr 110px 30px;
+                gap: 6px;
+            }
+            .cost-line input {
+                padding: 7px 8px;
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                font-size: 0.85rem;
+                background: #fff;
+            }
+            .cl-remove {
+                background: transparent;
+                border: none;
+                color: var(--ink-soft);
+                font-size: 0.9rem;
+            }
+            .cl-remove:hover {
+                color: var(--bad);
+            }
+
+            .live-calc {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+                background: rgba(28, 26, 23, 0.04);
+                padding: 10px;
+                border-radius: 8px;
+            }
+            .live-calc div {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .live-calc .label {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                color: var(--ink-soft);
+            }
+            .live-calc .value {
+                font-family: "IBM Plex Mono", monospace;
+                font-weight: 600;
+                font-size: 0.88rem;
+            }
+
+            .modal-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 8px;
+                margin-top: 6px;
+            }
+
+            hr {
+                border: none;
+                border-top: 1px solid var(--line);
+                margin: 6px 0;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    transition: none !important;
+                    animation: none !important;
+                }
+            }
+
+            @media (max-width: 640px) {
+                .card-figures {
+                    grid-template-columns: repeat(2, minmax(70px, 1fr));
+                }
+                .card-actions {
+                    margin-left: 0;
+                    width: 100%;
+                    justify-content: flex-start;
+                }
+                .stat-chips {
+                    margin-left: 0;
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body class="privacy-on mask-percent">
+        <div class="crop tl">
+            <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="#1C1A17" stroke-width="1" />
+                <line x1="12" y1="0" x2="12" y2="24" stroke="#1C1A17" stroke-width="1" />
+                <line x1="0" y1="12" x2="24" y2="12" stroke="#1C1A17" stroke-width="1" />
+            </svg>
+        </div>
+        <div class="crop tr">
+            <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="#1C1A17" stroke-width="1" />
+                <line x1="12" y1="0" x2="12" y2="24" stroke="#1C1A17" stroke-width="1" />
+                <line x1="0" y1="12" x2="24" y2="12" stroke="#1C1A17" stroke-width="1" />
+            </svg>
+        </div>
+        <div class="crop bl">
+            <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="#1C1A17" stroke-width="1" />
+                <line x1="12" y1="0" x2="12" y2="24" stroke="#1C1A17" stroke-width="1" />
+                <line x1="0" y1="12" x2="24" y2="12" stroke="#1C1A17" stroke-width="1" />
+            </svg>
+        </div>
+        <div class="crop br">
+            <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="#1C1A17" stroke-width="1" />
+                <line x1="12" y1="0" x2="12" y2="24" stroke="#1C1A17" stroke-width="1" />
+                <line x1="0" y1="12" x2="24" y2="12" stroke="#1C1A17" stroke-width="1" />
+            </svg>
+        </div>
+
+        <header class="topbar">
+            <div class="brand">
+                <svg class="reg-mark" viewBox="0 0 30 30">
+                    <circle class="c" cx="15" cy="15" r="6" />
+                    <circle class="m" cx="15" cy="15" r="6" />
+                    <circle class="y" cx="15" cy="15" r="6" />
+                    <circle class="k" cx="15" cy="15" r="6" />
+                </svg>
+                <div>
+                    <h1>Costing</h1>
+                    <p id="shopNameLabel">Documenting</p>
+                </div>
+            </div>
+            <div class="search">
+                <input id="searchInput" type="text" placeholder="Search product or category…" />
+            </div>
+            <div class="controls">
+                <button id="privacyToggle" class="privacy-btn" aria-pressed="true">
+                    <svg class="reg-mark" viewBox="0 0 30 30">
+                        <circle class="c" cx="15" cy="15" r="6" />
+                        <circle class="m" cx="15" cy="15" r="6" />
+                        <circle class="y" cx="15" cy="15" r="6" />
+                        <circle class="k" cx="15" cy="15" r="6" />
+                    </svg>
+                    <span id="privacyLabel">Privacy on</span>
+                </button>
+                <button id="settingsBtn" class="icon-btn" title="Settings">⚙</button>
+            </div>
+        </header>
+
+        <main>
+            <section class="add-bar">
+                <button id="addProductBtn" class="btn-primary">+ Add product</button>
+                <div class="stat-chips">
+                    <div class="chip">Items<b id="chipCount" class="mono">0</b></div>
+                    <div class="chip">Total cost<b id="chipCost" class="mono priv-value amt">—</b></div>
+                    <div class="chip">Potential revenue<b id="chipRevenue" class="mono priv-value amt">—</b></div>
+                    <div class="chip">Potential profit<b id="chipProfit" class="mono priv-value amt">—</b></div>
+                    <div class="chip">Avg margin<b id="chipMargin" class="mono priv-value pct">—</b></div>
+                </div>
+            </section>
+
+            <section id="productList" class="product-list"></section>
+            <p id="emptyState" class="empty-state" hidden>No products yet. Add your first one — business cards, tarpaulin, photocopies, mugs, shirts, whatever you print or sell.</p>
+
+            <p class="hint">Tip: press <strong>P</strong> anytime to quickly toggle privacy mode. Tap a masked number to peek at it for a few seconds.</p>
+        </main>
+
+        <!-- Product form modal -->
+        <div id="formModal" class="modal-overlay" hidden>
+            <div class="modal">
+                <h2 id="formTitle">Add product</h2>
+                <label
+                    >Product name
+                    <input id="fName" type="text" placeholder="e.g. Tarpaulin 3x5 ft" />
+                </label>
+                <label
+                    >Category
+                    <input id="fCategory" type="text" list="categoryList" placeholder="e.g. Printing, T-Shirts, Mugs, Documents" />
+                    <datalist id="categoryList">
+                        <option value="Business Cards"></option>
+                        <option value="Flyers / Leaflets"></option>
+                        <option value="Tarpaulin / Banner"></option>
+                        <option value="Photocopy / Documents"></option>
+                        <option value="Lamination"></option>
+                        <option value="Binding"></option>
+                        <option value="T-Shirt Printing"></option>
+                        <option value="Mugs / Tumblers"></option>
+                        <option value="Stickers"></option>
+                        <option value="Invitations"></option>
+                        <option value="Other Goods"></option>
+                    </datalist>
+                </label>
+                <label
+                    >Unit <span style="font-weight: 400">(optional — e.g. per piece, per box of 100)</span>
+                    <input id="fUnit" type="text" placeholder="per piece" />
+                </label>
+
+                <div class="cost-section">
+                    <div class="cost-header">
+                        <span>Cost breakdown</span>
+                        <button type="button" id="addCostLine">+ Add cost line</button>
+                    </div>
+                    <div id="costLines"></div>
+                </div>
+
+                <label
+                    >Selling price
+                    <input id="fPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+                </label>
+
+                <div class="live-calc">
+                    <div><span class="label">Total cost</span><span class="value priv-value amt" id="previewCost">—</span></div>
+                    <div><span class="label">Profit</span><span class="value priv-value amt" id="previewProfit">—</span></div>
+                    <div><span class="label">Margin</span><span class="value priv-value pct" id="previewMargin">—</span></div>
+                    <div><span class="label">Markup</span><span class="value priv-value pct" id="previewMarkup">—</span></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button id="cancelForm" class="btn-secondary">Cancel</button>
+                    <button id="saveForm" class="btn-primary">Save product</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings modal -->
+        <div id="settingsModal" class="modal-overlay" hidden>
+            <div class="modal">
+                <h2>Settings</h2>
+                <label
+                    >Shop / business name
+                    <input id="setShopName" type="text" />
+                </label>
+                <label
+                    >Currency symbol
+                    <input id="setCurrency" type="text" maxlength="4" style="max-width: 80px" />
+                </label>
+                <label class="checkbox-row"> <input type="checkbox" id="setMaskPercent" /> Also mask percentages in privacy mode </label>
+                <hr />
+                <button id="exportCsv" class="btn-secondary">Export all products as CSV (real numbers, for your backup)</button>
+                <div class="modal-actions">
+                    <button id="closeSettings" class="btn-primary">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                "use strict";
+
+                const DB_NAME = "documentingCostingDB";
+                const DB_VERSION = 1;
+                let db = null;
+
+                const state = {
+                    products: [],
+                    settings: { shopName: "Documenting", currency: "₱", maskPercent: true },
+                    editingId: null,
+                };
+
+                // ---------- IndexedDB helpers ----------
+                function openDatabase() {
+                    return new Promise((resolve, reject) => {
+                        const req = indexedDB.open(DB_NAME, DB_VERSION);
+                        req.onupgradeneeded = (e) => {
+                            const _db = e.target.result;
+                            if (!_db.objectStoreNames.contains("products")) {
+                                _db.createObjectStore("products", { keyPath: "id", autoIncrement: true });
+                            }
+                            if (!_db.objectStoreNames.contains("settings")) {
+                                _db.createObjectStore("settings", { keyPath: "key" });
+                            }
+                        };
+                        req.onsuccess = (e) => resolve(e.target.result);
+                        req.onerror = (e) => reject(e.target.error);
+                    });
+                }
+
+                function tx(storeName, mode) {
+                    return db.transaction(storeName, mode).objectStore(storeName);
+                }
+
+                function dbGetAllProducts() {
+                    return new Promise((resolve, reject) => {
+                        const store = tx("products", "readonly");
+                        const req = store.getAll();
+                        req.onsuccess = () => resolve(req.result || []);
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+
+                function dbPutProduct(product) {
+                    return new Promise((resolve, reject) => {
+                        const store = tx("products", "readwrite");
+                        const req = product.id ? store.put(product) : store.add(product);
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+
+                function dbDeleteProduct(id) {
+                    return new Promise((resolve, reject) => {
+                        const store = tx("products", "readwrite");
+                        const req = store.delete(id);
+                        req.onsuccess = () => resolve();
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+
+                function dbGetSetting(key) {
+                    return new Promise((resolve, reject) => {
+                        const store = tx("settings", "readonly");
+                        const req = store.get(key);
+                        req.onsuccess = () => resolve(req.result ? req.result.value : undefined);
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+
+                function dbSetSetting(key, value) {
+                    return new Promise((resolve, reject) => {
+                        const store = tx("settings", "readwrite");
+                        const req = store.put({ key, value });
+                        req.onsuccess = () => resolve();
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+
+                // ---------- Utilities ----------
+                function escapeHtml(str) {
+                    return String(str).replace(
+                        /[&<>"']/g,
+                        (c) =>
+                            ({
+                                "&": "&amp;",
+                                "<": "&lt;",
+                                ">": "&gt;",
+                                '"': "&quot;",
+                                "'": "&#39;",
+                            })[c],
+                    );
+                }
+
+                function fmtMoney(n) {
+                    const c = state.settings.currency || "₱";
+                    const v = Number(n) || 0;
+                    return c + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+
+                function fmtPct(n) {
+                    if (!isFinite(n)) return "—";
+                    return Number(n).toFixed(1) + "%";
+                }
+
+                function computeTotals(product) {
+                    const totalCost = (product.costItems || []).reduce((s, c) => s + (Number(c.amount) || 0), 0);
+                    const price = Number(product.sellingPrice) || 0;
+                    const profit = price - totalCost;
+                    const margin = price > 0 ? (profit / price) * 100 : 0;
+                    const markup = totalCost > 0 ? (profit / totalCost) * 100 : profit > 0 ? Infinity : 0;
+                    return { totalCost, price, profit, margin, markup };
+                }
+
+                let peekTimers = new WeakMap();
+                function bindPeek(el) {
+                    el.addEventListener("click", () => {
+                        if (!document.body.classList.contains("privacy-on")) return;
+                        el.classList.add("peek");
+                        if (peekTimers.has(el)) clearTimeout(peekTimers.get(el));
+                        const t = setTimeout(() => el.classList.remove("peek"), 3000);
+                        peekTimers.set(el, t);
+                    });
+                }
+
+                // ---------- Rendering ----------
+                function renderSummary() {
+                    const totals = state.products.map(computeTotals);
+                    const count = state.products.length;
+                    const totalCost = totals.reduce((s, t) => s + t.totalCost, 0);
+                    const totalRevenue = totals.reduce((s, t) => s + t.price, 0);
+                    const totalProfit = totals.reduce((s, t) => s + t.profit, 0);
+                    const avgMargin = count ? totals.reduce((s, t) => s + (isFinite(t.margin) ? t.margin : 0), 0) / count : 0;
+
+                    document.getElementById("chipCount").textContent = count;
+                    document.getElementById("chipCost").textContent = fmtMoney(totalCost);
+                    document.getElementById("chipRevenue").textContent = fmtMoney(totalRevenue);
+                    document.getElementById("chipProfit").textContent = fmtMoney(totalProfit);
+                    document.getElementById("chipMargin").textContent = count ? fmtPct(avgMargin) : "—";
+                }
+
+                function renderList(filterText) {
+                    const listEl = document.getElementById("productList");
+                    const emptyEl = document.getElementById("emptyState");
+                    const filter = (filterText || "").trim().toLowerCase();
+
+                    const items = state.products.filter((p) => {
+                        if (!filter) return true;
+                        return (p.name || "").toLowerCase().includes(filter) || (p.category || "").toLowerCase().includes(filter);
+                    });
+
+                    listEl.innerHTML = "";
+                    emptyEl.hidden = state.products.length > 0;
+
+                    if (state.products.length > 0 && items.length === 0) {
+                        const p = document.createElement("p");
+                        p.className = "empty-state";
+                        p.textContent = "No products match your search.";
+                        listEl.appendChild(p);
+                        return;
+                    }
+
+                    items.forEach((product) => {
+                        const t = computeTotals(product);
+                        const card = document.createElement("article");
+                        card.className = "product-card";
+                        card.dataset.id = product.id;
+
+                        const profitClass = t.profit > 0 ? "profit-pos" : t.profit < 0 ? "profit-neg" : "";
+                        const marginClass = t.margin < 10 && t.margin >= 0 ? "margin-warn" : "";
+
+                        card.innerHTML = `
+        <div class="card-main">
+          <div class="card-title">
+            <h3>${escapeHtml(product.name)}</h3>
+            <div class="meta">
+              ${product.category ? `<span class="tag">${escapeHtml(product.category)}</span>` : ""}
+              ${product.unit ? `<span>${escapeHtml(product.unit)}</span>` : ""}
+            </div>
+          </div>
+          <div class="card-figures">
+            <div class="figure"><span class="label">Cost</span><span class="value priv-value amt">${fmtMoney(t.totalCost)}</span></div>
+            <div class="figure"><span class="label">Price</span><span class="value priv-value amt">${fmtMoney(t.price)}</span></div>
+            <div class="figure"><span class="label">Profit</span><span class="value priv-value amt ${profitClass}">${fmtMoney(t.profit)}</span></div>
+            <div class="figure"><span class="label">Margin</span><span class="value priv-value pct ${marginClass}">${fmtPct(t.margin)}</span></div>
+            <div class="figure"><span class="label">Markup</span><span class="value priv-value pct">${isFinite(t.markup) ? fmtPct(t.markup) : "—"}</span></div>
+          </div>
+          <div class="card-actions">
+            <button type="button" class="expand-btn">Details ▾</button>
+            <button type="button" class="edit-btn">Edit</button>
+            <button type="button" class="delete-btn">Delete</button>
+          </div>
+        </div>
+        <div class="card-details" hidden>
+          <ul class="cost-breakdown">
+            ${(product.costItems || []).map((c) => `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`).join("") || "<li><span>No cost lines added</span><span></span></li>"}
+          </ul>
+        </div>
+      `;
+
+                        card.querySelectorAll(".priv-value").forEach(bindPeek);
+
+                        card.querySelector(".expand-btn").addEventListener("click", () => {
+                            const details = card.querySelector(".card-details");
+                            details.hidden = !details.hidden;
+                            card.querySelector(".expand-btn").textContent = details.hidden ? "Details ▾" : "Details ▴";
+                        });
+
+                        card.querySelector(".edit-btn").addEventListener("click", () => openForm(product));
+
+                        card.querySelector(".delete-btn").addEventListener("click", async () => {
+                            if (confirm(`Delete "${product.name}"? This can't be undone.`)) {
+                                await dbDeleteProduct(product.id);
+                                state.products = state.products.filter((p) => p.id !== product.id);
+                                renderList(document.getElementById("searchInput").value);
+                                renderSummary();
+                            }
+                        });
+
+                        listEl.appendChild(card);
+                    });
+                }
+
+                // ---------- Form modal ----------
+                const formModal = document.getElementById("formModal");
+                const costLinesEl = document.getElementById("costLines");
+
+                function addCostLineRow(label, amount) {
+                    const row = document.createElement("div");
+                    row.className = "cost-line";
+                    row.innerHTML = `
+      <input type="text" class="cl-label" placeholder="e.g. Ink, paper, labor" value="${escapeHtml(label || "")}">
+      <input type="number" class="cl-amount" step="0.01" min="0" placeholder="0.00" value="${amount !== undefined ? amount : ""}">
+      <button type="button" class="cl-remove" title="Remove">✕</button>
+    `;
+                    row.querySelector(".cl-remove").addEventListener("click", () => {
+                        row.remove();
+                        updatePreview();
+                    });
+                    row.querySelectorAll("input").forEach((inp) => inp.addEventListener("input", updatePreview));
+                    costLinesEl.appendChild(row);
+                }
+
+                function readCostLines() {
+                    return Array.from(costLinesEl.querySelectorAll(".cost-line"))
+                        .map((row) => ({
+                            label: row.querySelector(".cl-label").value.trim(),
+                            amount: parseFloat(row.querySelector(".cl-amount").value) || 0,
+                        }))
+                        .filter((c) => c.label || c.amount);
+                }
+
+                function updatePreview() {
+                    const costItems = readCostLines();
+                    const price = parseFloat(document.getElementById("fPrice").value) || 0;
+                    const t = computeTotals({ costItems, sellingPrice: price });
+                    document.getElementById("previewCost").textContent = fmtMoney(t.totalCost);
+                    document.getElementById("previewProfit").textContent = fmtMoney(t.profit);
+                    document.getElementById("previewMargin").textContent = fmtPct(t.margin);
+                    document.getElementById("previewMarkup").textContent = isFinite(t.markup) ? fmtPct(t.markup) : "—";
+                }
+
+                function openForm(product) {
+                    state.editingId = product ? product.id : null;
+                    document.getElementById("formTitle").textContent = product ? "Edit product" : "Add product";
+                    document.getElementById("fName").value = product ? product.name : "";
+                    document.getElementById("fCategory").value = product ? product.category || "" : "";
+                    document.getElementById("fUnit").value = product ? product.unit || "" : "";
+                    document.getElementById("fPrice").value = product ? product.sellingPrice : "";
+
+                    costLinesEl.innerHTML = "";
+                    if (product && product.costItems && product.costItems.length) {
+                        product.costItems.forEach((c) => addCostLineRow(c.label, c.amount));
+                    } else {
+                        addCostLineRow("", "");
+                    }
+                    updatePreview();
+                    formModal.hidden = false;
+                    document.getElementById("fName").focus();
+                }
+
+                function closeForm() {
+                    formModal.hidden = true;
+                    state.editingId = null;
+                }
+
+                document.getElementById("addProductBtn").addEventListener("click", () => openForm(null));
+                document.getElementById("cancelForm").addEventListener("click", closeForm);
+                document.getElementById("addCostLine").addEventListener("click", () => addCostLineRow("", ""));
+                document.getElementById("fPrice").addEventListener("input", updatePreview);
+                formModal.addEventListener("click", (e) => {
+                    if (e.target === formModal) closeForm();
+                });
+
+                document.getElementById("saveForm").addEventListener("click", async () => {
+                    const name = document.getElementById("fName").value.trim();
+                    if (!name) {
+                        alert("Please enter a product name.");
+                        return;
+                    }
+                    const product = {
+                        name,
+                        category: document.getElementById("fCategory").value.trim(),
+                        unit: document.getElementById("fUnit").value.trim(),
+                        costItems: readCostLines(),
+                        sellingPrice: parseFloat(document.getElementById("fPrice").value) || 0,
+                        updatedAt: Date.now(),
+                    };
+                    if (state.editingId) {
+                        product.id = state.editingId;
+                        const existing = state.products.find((p) => p.id === state.editingId);
+                        product.createdAt = existing ? existing.createdAt : Date.now();
+                    } else {
+                        product.createdAt = Date.now();
+                    }
+
+                    const id = await dbPutProduct(product);
+                    product.id = product.id || id;
+
+                    const idx = state.products.findIndex((p) => p.id === product.id);
+                    if (idx >= 0) state.products[idx] = product;
+                    else state.products.push(product);
+
+                    closeForm();
+                    renderList(document.getElementById("searchInput").value);
+                    renderSummary();
+                });
+
+                // ---------- Search ----------
+                document.getElementById("searchInput").addEventListener("input", (e) => {
+                    renderList(e.target.value);
+                });
+
+                // ---------- Privacy mode ----------
+                function setPrivacy(on) {
+                    document.body.classList.toggle("privacy-on", on);
+                    document.getElementById("privacyToggle").setAttribute("aria-pressed", String(on));
+                    document.getElementById("privacyLabel").textContent = on ? "Privacy on" : "Privacy off";
+                }
+
+                document.getElementById("privacyToggle").addEventListener("click", () => {
+                    setPrivacy(!document.body.classList.contains("privacy-on"));
+                });
+
+                document.addEventListener("keydown", (e) => {
+                    const tag = (e.target.tagName || "").toLowerCase();
+                    if (tag === "input" || tag === "textarea") return;
+                    if (e.key === "p" || e.key === "P") {
+                        setPrivacy(!document.body.classList.contains("privacy-on"));
+                    }
+                });
+
+                document.querySelectorAll(".priv-value").forEach(bindPeek);
+
+                // ---------- Settings ----------
+                const settingsModal = document.getElementById("settingsModal");
+                document.getElementById("settingsBtn").addEventListener("click", () => {
+                    document.getElementById("setShopName").value = state.settings.shopName;
+                    document.getElementById("setCurrency").value = state.settings.currency;
+                    document.getElementById("setMaskPercent").checked = state.settings.maskPercent;
+                    settingsModal.hidden = false;
+                });
+                settingsModal.addEventListener("click", (e) => {
+                    if (e.target === settingsModal) settingsModal.hidden = true;
+                });
+
+                document.getElementById("closeSettings").addEventListener("click", async () => {
+                    state.settings.shopName = document.getElementById("setShopName").value.trim() || "Documenting";
+                    state.settings.currency = document.getElementById("setCurrency").value.trim() || "₱";
+                    state.settings.maskPercent = document.getElementById("setMaskPercent").checked;
+
+                    await dbSetSetting("shopName", state.settings.shopName);
+                    await dbSetSetting("currency", state.settings.currency);
+                    await dbSetSetting("maskPercent", state.settings.maskPercent);
+
+                    document.getElementById("shopNameLabel").textContent = state.settings.shopName;
+                    document.body.classList.toggle("mask-percent", state.settings.maskPercent);
+
+                    settingsModal.hidden = true;
+                    renderSummary();
+                    renderList(document.getElementById("searchInput").value);
+                });
+
+                document.getElementById("exportCsv").addEventListener("click", () => {
+                    const rows = [["Name", "Category", "Unit", "Cost Breakdown", "Total Cost", "Selling Price", "Profit", "Margin %", "Markup %"]];
+                    state.products.forEach((p) => {
+                        const t = computeTotals(p);
+                        const breakdown = (p.costItems || []).map((c) => `${c.label}: ${c.amount}`).join(" | ");
+                        rows.push([
+                            p.name,
+                            p.category || "",
+                            p.unit || "",
+                            breakdown,
+                            t.totalCost.toFixed(2),
+                            t.price.toFixed(2),
+                            t.profit.toFixed(2),
+                            t.margin.toFixed(1),
+                            isFinite(t.markup) ? t.markup.toFixed(1) : "",
+                        ]);
+                    });
+                    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+                    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "costing-export.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+
+                // ---------- Init ----------
+                async function init() {
+                    db = await openDatabase();
+
+                    const [shopName, currency, maskPercent] = await Promise.all([dbGetSetting("shopName"), dbGetSetting("currency"), dbGetSetting("maskPercent")]);
+                    if (shopName !== undefined) state.settings.shopName = shopName;
+                    if (currency !== undefined) state.settings.currency = currency;
+                    if (maskPercent !== undefined) state.settings.maskPercent = maskPercent;
+
+                    document.getElementById("shopNameLabel").textContent = state.settings.shopName;
+                    document.body.classList.toggle("mask-percent", state.settings.maskPercent);
+                    // Privacy always defaults to ON on load, regardless of last session.
+                    setPrivacy(true);
+
+                    state.products = await dbGetAllProducts();
+                    renderSummary();
+                    renderList("");
+                }
+
+                init().catch((err) => {
+                    console.error(err);
+                    alert("Could not open local storage (IndexedDB). Try a different browser or check privacy settings.");
+                });
+            })();
+        </script>
+        <script>
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                    navigator.serviceWorker.register("sw.js").catch((err) => {
+                        console.error("SW registration failed:", err);
+                    });
+                });
+
+                // Auto-refresh once when a new SW version takes control.
+                let refreshing = false;
+                navigator.serviceWorker.addEventListener("controllerchange", () => {
+                    if (refreshing) return;
+                    refreshing = true;
+                    window.location.reload();
+                });
+            }
+        </script>
+    </body>
+</html>
