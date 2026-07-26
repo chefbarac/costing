@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="en">
     <head>
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-1HP06QYXWR"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+            gtag("js", new Date());
+
+            gtag("config", "G-1HP06QYXWR");
+        </script>
         <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💸</text></svg>' />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -353,10 +364,12 @@
                 cursor: pointer;
                 border-radius: 3px;
             }
-            body.privacy-on .priv-value.amt:not(.peek) {
+            body.privacy-on .priv-value.amt:not(.peek),
+            body.privacy-on .priv-value.pct:not(.peek) {
                 color: transparent !important;
             }
-            body.privacy-on .priv-value.amt:not(.peek)::before {
+            body.privacy-on .priv-value.amt:not(.peek)::before,
+            body.privacy-on .priv-value.pct:not(.peek)::before {
                 content: "";
                 position: absolute;
                 inset: -1px -2px;
@@ -365,17 +378,9 @@
                 background-size: 6px 6px;
                 opacity: 0.55;
             }
-            body.privacy-on.mask-percent .priv-value.pct:not(.peek) {
-                color: transparent !important;
-            }
-            body.privacy-on.mask-percent .priv-value.pct:not(.peek)::before {
-                content: "";
-                position: absolute;
-                inset: -1px -2px;
-                border-radius: 3px;
-                background-image: radial-gradient(circle, var(--ink) 1.1px, transparent 1.3px);
-                background-size: 6px 6px;
-                opacity: 0.55;
+            /* Price is public info (posted/quoted to customers) — never masked, even in privacy mode */
+            .value.price-visible {
+                cursor: default;
             }
 
             .card-actions {
@@ -524,9 +529,16 @@
                 gap: 6px;
             }
             .cost-line {
-                display: grid;
-                grid-template-columns: 1fr 110px 30px;
+                display: flex;
+                flex-wrap: wrap;
                 gap: 6px;
+                align-items: center;
+            }
+            .cost-line .cl-label {
+                flex: 1 1 160px;
+            }
+            .cost-line .cl-amount {
+                flex: 1 1 90px;
             }
             .cost-line input {
                 padding: 7px 8px;
@@ -534,12 +546,15 @@
                 border-radius: 6px;
                 font-size: 0.85rem;
                 background: #fff;
+                min-width: 0;
             }
             .cl-remove {
+                flex: 0 0 auto;
                 background: transparent;
                 border: none;
                 color: var(--ink-soft);
-                font-size: 0.9rem;
+                font-size: 1.1rem;
+                padding: 4px 8px;
             }
             .cl-remove:hover {
                 color: var(--bad);
@@ -590,6 +605,13 @@
             }
 
             @media (max-width: 640px) {
+                main {
+                    padding: 14px;
+                }
+                header.topbar {
+                    padding: 10px 14px;
+                    gap: 10px;
+                }
                 .card-figures {
                     grid-template-columns: repeat(2, minmax(70px, 1fr));
                 }
@@ -602,10 +624,99 @@
                     margin-left: 0;
                     width: 100%;
                 }
+                .chip {
+                    flex: 1 1 calc(50% - 8px);
+                    min-width: 0;
+                }
+                .modal {
+                    padding: 16px;
+                    border-radius: 10px;
+                }
+                .live-calc {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            @media (max-width: 480px) {
+                header.topbar {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .brand {
+                    justify-content: center;
+                }
+                .topbar .search {
+                    order: 3;
+                    flex: 1 1 100%;
+                }
+                .controls {
+                    order: 2;
+                    justify-content: space-between;
+                    width: 100%;
+                }
+                .privacy-btn {
+                    flex: 1 1 auto;
+                    justify-content: center;
+                }
+                .add-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                #addProductBtn {
+                    width: 100%;
+                    text-align: center;
+                }
+                .stat-chips {
+                    justify-content: space-between;
+                }
+                .chip {
+                    flex: 1 1 calc(50% - 8px);
+                }
+                .card-main {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .card-figures {
+                    grid-template-columns: 1fr;
+                }
+                .figure {
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                .card-actions {
+                    justify-content: space-between;
+                }
+                .card-actions button {
+                    flex: 1 1 auto;
+                    text-align: center;
+                    padding: 9px 6px;
+                }
+                .modal-overlay {
+                    padding: 14px 10px;
+                }
+                .modal-actions {
+                    flex-direction: column-reverse;
+                }
+                .modal-actions button {
+                    width: 100%;
+                }
+                .live-calc {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            @media (max-width: 360px) {
+                .brand h1 {
+                    font-size: 1.1rem;
+                }
+                .chip {
+                    flex: 1 1 100%;
+                }
             }
         </style>
     </head>
-    <body class="privacy-on mask-percent">
+    <body class="privacy-on">
         <div class="crop tl">
             <svg viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="9" fill="none" stroke="#1C1A17" stroke-width="1" />
@@ -752,7 +863,7 @@
                     >Currency symbol
                     <input id="setCurrency" type="text" maxlength="4" style="max-width: 80px" />
                 </label>
-                <label class="checkbox-row"> <input type="checkbox" id="setMaskPercent" /> Also mask percentages in privacy mode </label>
+                <p style="font-size: 0.75rem; color: var(--ink-soft); margin: 0">In privacy mode, prices stay visible but cost, profit, margin, and markup are always hidden until you tap to peek.</p>
                 <hr />
                 <button id="exportCsv" class="btn-secondary">Export all products as CSV (real numbers, for your backup)</button>
                 <div class="modal-actions">
@@ -771,7 +882,7 @@
 
                 const state = {
                     products: [],
-                    settings: { shopName: "Documenting", currency: "₱", maskPercent: true },
+                    settings: { shopName: "Documenting", currency: "₱" },
                     editingId: null,
                 };
 
@@ -945,7 +1056,7 @@
           </div>
           <div class="card-figures">
             <div class="figure"><span class="label">Cost</span><span class="value priv-value amt">${fmtMoney(t.totalCost)}</span></div>
-            <div class="figure"><span class="label">Price</span><span class="value priv-value amt">${fmtMoney(t.price)}</span></div>
+            <div class="figure"><span class="label">Price</span><span class="value price-visible">${fmtMoney(t.price)}</span></div>
             <div class="figure"><span class="label">Profit</span><span class="value priv-value amt ${profitClass}">${fmtMoney(t.profit)}</span></div>
             <div class="figure"><span class="label">Margin</span><span class="value priv-value pct ${marginClass}">${fmtPct(t.margin)}</span></div>
             <div class="figure"><span class="label">Markup</span><span class="value priv-value pct">${isFinite(t.markup) ? fmtPct(t.markup) : "—"}</span></div>
@@ -1122,7 +1233,6 @@
                 document.getElementById("settingsBtn").addEventListener("click", () => {
                     document.getElementById("setShopName").value = state.settings.shopName;
                     document.getElementById("setCurrency").value = state.settings.currency;
-                    document.getElementById("setMaskPercent").checked = state.settings.maskPercent;
                     settingsModal.hidden = false;
                 });
                 settingsModal.addEventListener("click", (e) => {
@@ -1132,14 +1242,11 @@
                 document.getElementById("closeSettings").addEventListener("click", async () => {
                     state.settings.shopName = document.getElementById("setShopName").value.trim() || "Documenting";
                     state.settings.currency = document.getElementById("setCurrency").value.trim() || "₱";
-                    state.settings.maskPercent = document.getElementById("setMaskPercent").checked;
 
                     await dbSetSetting("shopName", state.settings.shopName);
                     await dbSetSetting("currency", state.settings.currency);
-                    await dbSetSetting("maskPercent", state.settings.maskPercent);
 
                     document.getElementById("shopNameLabel").textContent = state.settings.shopName;
-                    document.body.classList.toggle("mask-percent", state.settings.maskPercent);
 
                     settingsModal.hidden = true;
                     renderSummary();
@@ -1177,13 +1284,11 @@
                 async function init() {
                     db = await openDatabase();
 
-                    const [shopName, currency, maskPercent] = await Promise.all([dbGetSetting("shopName"), dbGetSetting("currency"), dbGetSetting("maskPercent")]);
+                    const [shopName, currency] = await Promise.all([dbGetSetting("shopName"), dbGetSetting("currency")]);
                     if (shopName !== undefined) state.settings.shopName = shopName;
                     if (currency !== undefined) state.settings.currency = currency;
-                    if (maskPercent !== undefined) state.settings.maskPercent = maskPercent;
 
                     document.getElementById("shopNameLabel").textContent = state.settings.shopName;
-                    document.body.classList.toggle("mask-percent", state.settings.maskPercent);
                     // Privacy always defaults to ON on load, regardless of last session.
                     setPrivacy(true);
 
