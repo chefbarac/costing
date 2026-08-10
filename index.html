@@ -35,14 +35,8 @@
                 --shadow: 0 1px 2px rgba(28, 26, 23, 0.06), 0 6px 20px rgba(28, 26, 23, 0.06);
             }
 
-            * {
-                box-sizing: border-box;
-            }
-            html,
-            body {
-                margin: 0;
-                padding: 0;
-            }
+            * { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; }
             body {
                 background: var(--paper);
                 background-image: radial-gradient(circle at 1px 1px, rgba(28, 26, 23, 0.05) 1px, transparent 1.4px);
@@ -53,26 +47,15 @@
                 padding-bottom: 64px;
             }
 
-            h1,
-            h2,
-            h3 {
+            h1, h2, h3 {
                 font-family: "Space Grotesk", sans-serif;
                 margin: 0;
                 letter-spacing: -0.01em;
             }
-            .mono {
-                font-family: "IBM Plex Mono", monospace;
-            }
+            .mono { font-family: "IBM Plex Mono", monospace; }
 
-            a,
-            button,
-            input,
-            select {
-                font-family: inherit;
-            }
-            button {
-                cursor: pointer;
-            }
+            a, button, input, select { font-family: inherit; }
+            button { cursor: pointer; }
             :focus-visible {
                 outline: 2px solid var(--key);
                 outline-offset: 2px;
@@ -86,31 +69,12 @@
                 pointer-events: none;
                 z-index: 1;
             }
-            .crop svg {
-                width: 100%;
-                height: 100%;
-            }
-            .crop.tl {
-                top: 14px;
-                left: 14px;
-            }
-            .crop.tr {
-                top: 14px;
-                right: 14px;
-            }
-            .crop.bl {
-                bottom: 14px;
-                left: 14px;
-            }
-            .crop.br {
-                bottom: 14px;
-                right: 14px;
-            }
-            @media (max-width: 720px) {
-                .crop {
-                    display: none;
-                }
-            }
+            .crop svg { width: 100%; height: 100%; }
+            .crop.tl { top: 14px; left: 14px; }
+            .crop.tr { top: 14px; right: 14px; }
+            .crop.bl { bottom: 14px; left: 14px; }
+            .crop.br { bottom: 14px; right: 14px; }
+            @media (max-width: 720px) { .crop { display: none; } }
 
             header.topbar {
                 position: sticky;
@@ -125,58 +89,22 @@
                 backdrop-filter: blur(6px);
                 border-bottom: 1px solid var(--line);
             }
-            .brand {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            .reg-mark {
-                width: 30px;
-                height: 30px;
-                flex: 0 0 auto;
-            }
-            .reg-mark circle {
-                mix-blend-mode: multiply;
-                transition: transform 0.35s ease;
-            }
-            .reg-mark .c {
-                fill: var(--cyan);
-            }
-            .reg-mark .m {
-                fill: var(--magenta);
-            }
-            .reg-mark .y {
-                fill: var(--yellow);
-            }
-            .reg-mark .k {
-                fill: var(--key);
-            }
-            body.privacy-on .reg-mark .c {
-                transform: translate(-2.4px, -1.4px);
-            }
-            body.privacy-on .reg-mark .m {
-                transform: translate(2.2px, -1.6px);
-            }
-            body.privacy-on .reg-mark .y {
-                transform: translate(0.4px, 2.4px);
-            }
-            body.privacy-on .reg-mark .k {
-                transform: translate(0, 0);
-            }
+            .brand { display: flex; align-items: center; gap: 10px; }
+            .reg-mark { width: 30px; height: 30px; flex: 0 0 auto; }
+            .reg-mark circle { mix-blend-mode: multiply; transition: transform 0.35s ease; }
+            .reg-mark .c { fill: var(--cyan); }
+            .reg-mark .m { fill: var(--magenta); }
+            .reg-mark .y { fill: var(--yellow); }
+            .reg-mark .k { fill: var(--key); }
+            body.privacy-on .reg-mark .c { transform: translate(-2.4px, -1.4px); }
+            body.privacy-on .reg-mark .m { transform: translate(2.2px, -1.6px); }
+            body.privacy-on .reg-mark .y { transform: translate(0.4px, 2.4px); }
+            body.privacy-on .reg-mark .k { transform: translate(0, 0); }
 
-            .brand h1 {
-                font-size: 1.25rem;
-            }
-            .brand p {
-                margin: 0;
-                font-size: 0.75rem;
-                color: var(--ink-soft);
-            }
+            .brand h1 { font-size: 1.25rem; }
+            .brand p { margin: 0; font-size: 0.75rem; color: var(--ink-soft); }
 
-            .topbar .search {
-                flex: 1 1 180px;
-                min-width: 140px;
-            }
+            .topbar .search { flex: 1 1 180px; min-width: 140px; }
             .topbar .search input {
                 width: 100%;
                 padding: 9px 12px;
@@ -187,11 +115,7 @@
                 color: var(--ink);
             }
 
-            .controls {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
+            .controls { display: flex; align-items: center; gap: 8px; }
             .privacy-btn {
                 display: flex;
                 align-items: center;
@@ -204,10 +128,7 @@
                 font-weight: 600;
                 color: var(--ink);
             }
-            .privacy-btn .reg-mark {
-                width: 20px;
-                height: 20px;
-            }
+            .privacy-btn .reg-mark { width: 20px; height: 20px; }
             .icon-btn {
                 width: 36px;
                 height: 36px;
@@ -262,9 +183,7 @@
                 font-weight: 600;
                 font-size: 0.9rem;
             }
-            .btn-primary:hover {
-                background: #000;
-            }
+            .btn-primary:hover { background: #000; }
             .btn-secondary {
                 background: transparent;
                 border: 1px solid var(--line);
@@ -307,15 +226,13 @@
                 letter-spacing: 0;
             }
 
-            .product-list,
-            .order-list {
+            .product-list, .order-list {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
 
-            .product-card,
-            .order-card {
+            .product-card, .order-card {
                 background: var(--card);
                 border: 1px solid var(--line);
                 border-radius: var(--radius);
@@ -379,9 +296,7 @@
                 min-width: 130px;
                 flex: 1 1 160px;
             }
-            .card-title h3 {
-                font-size: 1rem;
-            }
+            .card-title h3 { font-size: 1rem; }
             .card-title .meta {
                 font-size: 0.72rem;
                 color: var(--ink-soft);
@@ -425,15 +340,9 @@
                 font-size: 0.92rem;
                 font-weight: 600;
             }
-            .value.profit-pos {
-                color: var(--good);
-            }
-            .value.profit-neg {
-                color: var(--bad);
-            }
-            .value.margin-warn {
-                color: var(--warn);
-            }
+            .value.profit-pos { color: var(--good); }
+            .value.profit-neg { color: var(--bad); }
+            .value.margin-warn { color: var(--warn); }
 
             .priv-value {
                 position: relative;
@@ -464,9 +373,7 @@
             body.privacy-on .tag.platform.priv-value.txt:not(.peek) {
                 background: rgba(28, 26, 23, 0.08);
             }
-            .value.price-visible {
-                cursor: default;
-            }
+            .value.price-visible { cursor: default; }
 
             .card-actions {
                 display: flex;
@@ -509,9 +416,7 @@
                 justify-content: space-between;
                 font-size: 0.85rem;
             }
-            .cost-breakdown li span:first-child {
-                color: var(--ink-soft);
-            }
+            .cost-breakdown li span:first-child { color: var(--ink-soft); }
 
             .history-section {
                 margin-top: 12px;
@@ -545,13 +450,8 @@
                 padding: 3px 0;
                 border-bottom: 1px solid rgba(214, 205, 184, 0.5);
             }
-            .history-list .h-date {
-                color: var(--ink-soft);
-            }
-            .history-list .h-note {
-                color: var(--ink-soft);
-                font-size: 0.75rem;
-            }
+            .history-list .h-date { color: var(--ink-soft); }
+            .history-list .h-note { color: var(--ink-soft); font-size: 0.75rem; }
 
             .empty-state {
                 text-align: center;
@@ -567,12 +467,8 @@
                 margin-top: 26px;
             }
 
-            .panel {
-                display: none;
-            }
-            .panel.active {
-                display: block;
-            }
+            .panel { display: none; }
+            .panel.active { display: block; }
 
             /* Modal */
             .modal-overlay {
@@ -586,9 +482,7 @@
                 z-index: 50;
                 overflow-y: auto;
             }
-            .modal-overlay[hidden] {
-                display: none;
-            }
+            .modal-overlay[hidden] { display: none; }
             .modal {
                 background: var(--card);
                 border-radius: 12px;
@@ -601,24 +495,14 @@
                 gap: 12px;
                 position: relative;
             }
-            .modal.wide {
-                max-width: min(720px, calc(100vw - 32px));
-            }
+            .modal.wide { max-width: min(720px, calc(100vw - 32px)); }
             @media (min-width: 900px) {
-                .modal {
-                    max-width: min(640px, calc(100vw - 48px));
-                }
-                .modal.wide {
-                    max-width: min(900px, calc(100vw - 48px));
-                }
+                .modal { max-width: min(640px, calc(100vw - 48px)); }
+                .modal.wide { max-width: min(900px, calc(100vw - 48px)); }
             }
             @media (min-width: 1200px) {
-                .modal {
-                    max-width: min(720px, calc(100vw - 64px));
-                }
-                .modal.wide {
-                    max-width: min(1080px, calc(100vw - 64px));
-                }
+                .modal { max-width: min(720px, calc(100vw - 64px)); }
+                .modal.wide { max-width: min(1080px, calc(100vw - 64px)); }
             }
             .modal-header {
                 display: flex;
@@ -651,10 +535,7 @@
                 border-color: var(--ink-soft);
                 background: rgba(28, 26, 23, 0.04);
             }
-            .modal h2 {
-                font-size: 1.15rem;
-                margin-bottom: 4px;
-            }
+            .modal h2 { font-size: 1.15rem; margin-bottom: 4px; }
             .modal label {
                 display: flex;
                 flex-direction: column;
@@ -675,9 +556,7 @@
                 color: var(--ink);
                 background: #fff;
             }
-            .modal input[type="checkbox"] {
-                margin-right: 6px;
-            }
+            .modal input[type="checkbox"] { margin-right: 6px; }
             .checkbox-row {
                 flex-direction: row !important;
                 align-items: center;
@@ -709,31 +588,20 @@
                 padding: 4px 9px;
                 font-size: 0.78rem;
             }
-            #costLines,
-            #orderItems {
+            #costLines, #orderItems {
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
             }
-            .cost-line,
-            .order-item-row {
+            .cost-line, .order-item-row {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
                 align-items: center;
             }
-            .cost-line .cl-label,
-            .order-item-row .oi-name {
-                flex: 1 1 140px;
-            }
-            .cost-line .cl-amount,
-            .order-item-row .oi-qty,
-            .order-item-row .oi-amount {
-                flex: 1 1 80px;
-            }
-            .cost-line input,
-            .order-item-row input,
-            .order-item-row select {
+            .cost-line .cl-label, .order-item-row .oi-name { flex: 1 1 140px; }
+            .cost-line .cl-amount, .order-item-row .oi-qty, .order-item-row .oi-amount { flex: 1 1 80px; }
+            .cost-line input, .order-item-row input, .order-item-row select {
                 padding: 7px 8px;
                 border: 1px solid var(--line);
                 border-radius: 6px;
@@ -847,8 +715,7 @@
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
             }
-            .cl-remove,
-            .oi-remove {
+            .cl-remove, .oi-remove {
                 flex: 0 0 auto;
                 background: transparent;
                 border: none;
@@ -856,10 +723,7 @@
                 font-size: 1.1rem;
                 padding: 4px 8px;
             }
-            .cl-remove:hover,
-            .oi-remove:hover {
-                color: var(--bad);
-            }
+            .cl-remove:hover, .oi-remove:hover { color: var(--bad); }
 
             .live-calc {
                 display: grid;
@@ -869,12 +733,8 @@
                 padding: 10px;
                 border-radius: 8px;
             }
-            .live-calc.cols-3 {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            .live-calc.cols-5 {
-                grid-template-columns: repeat(5, 1fr);
-            }
+            .live-calc.cols-3 { grid-template-columns: repeat(3, 1fr); }
+            .live-calc.cols-5 { grid-template-columns: repeat(5, 1fr); }
             .live-calc div {
                 display: flex;
                 flex-direction: column;
@@ -907,9 +767,7 @@
                 font-weight: 600;
                 white-space: nowrap;
             }
-            .suggest-btn:hover {
-                background: #0099d4;
-            }
+            .suggest-btn:hover { background: #0099d4; }
             .suggest-hint {
                 font-size: 0.72rem;
                 color: var(--ink-soft);
@@ -940,9 +798,7 @@
                 gap: 10px;
                 flex-wrap: wrap;
             }
-            .match-banner.visible {
-                display: flex;
-            }
+            .match-banner.visible { display: flex; }
             .match-banner button {
                 background: var(--cyan);
                 color: #fff;
@@ -958,142 +814,51 @@
                 color: var(--ink-soft);
                 margin-top: 4px;
             }
-            .order-net b {
-                color: var(--ink);
-                font-family: "IBM Plex Mono", monospace;
-            }
+            .order-net b { color: var(--ink); font-family: "IBM Plex Mono", monospace; }
 
             @media (prefers-reduced-motion: reduce) {
-                * {
-                    transition: none !important;
-                    animation: none !important;
-                }
+                * { transition: none !important; animation: none !important; }
             }
 
             @media (max-width: 640px) {
-                main {
-                    padding: 14px;
-                }
-                header.topbar {
-                    padding: 10px 14px;
-                    gap: 10px;
-                }
-                .card-figures {
-                    grid-template-columns: repeat(2, minmax(70px, 1fr));
-                }
-                .card-figures.order-figs {
-                    grid-template-columns: repeat(2, minmax(70px, 1fr));
-                }
-                .card-actions {
-                    margin-left: 0;
-                    width: 100%;
-                    justify-content: flex-start;
-                }
-                .stat-chips {
-                    margin-left: 0;
-                    width: 100%;
-                }
-                .chip {
-                    flex: 1 1 calc(50% - 8px);
-                    min-width: 0;
-                }
-                .modal {
-                    padding: 16px;
-                    border-radius: 10px;
-                }
-                .live-calc {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-                .live-calc.cols-5 {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-                .target-row {
-                    grid-template-columns: 1fr 1fr;
-                }
-                .target-row .suggest-btn {
-                    grid-column: 1 / -1;
-                }
-                .tabs {
-                    order: 4;
-                    width: 100%;
-                    justify-content: center;
-                }
+                main { padding: 14px; }
+                header.topbar { padding: 10px 14px; gap: 10px; }
+                .card-figures { grid-template-columns: repeat(2, minmax(70px, 1fr)); }
+                .card-figures.order-figs { grid-template-columns: repeat(2, minmax(70px, 1fr)); }
+                .card-actions { margin-left: 0; width: 100%; justify-content: flex-start; }
+                .stat-chips { margin-left: 0; width: 100%; }
+                .chip { flex: 1 1 calc(50% - 8px); min-width: 0; }
+                .modal { padding: 16px; border-radius: 10px; }
+                .live-calc { grid-template-columns: repeat(2, 1fr); }
+                .live-calc.cols-5 { grid-template-columns: repeat(2, 1fr); }
+                .target-row { grid-template-columns: 1fr 1fr; }
+                .target-row .suggest-btn { grid-column: 1 / -1; }
+                .tabs { order: 4; width: 100%; justify-content: center; }
             }
 
             @media (max-width: 480px) {
-                header.topbar {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-                .brand {
-                    justify-content: center;
-                }
-                .topbar .search {
-                    order: 3;
-                    flex: 1 1 100%;
-                }
-                .controls {
-                    order: 2;
-                    justify-content: space-between;
-                    width: 100%;
-                }
-                .privacy-btn {
-                    flex: 1 1 auto;
-                    justify-content: center;
-                }
-                .add-bar {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-                #addProductBtn,
-                #addOrderBtn {
-                    width: 100%;
-                    text-align: center;
-                }
-                .stat-chips {
-                    justify-content: space-between;
-                }
-                .chip {
-                    flex: 1 1 calc(50% - 8px);
-                }
-                .card-main {
-                    flex-direction: column;
-                    align-items: stretch;
-                }
-                .card-figures {
-                    grid-template-columns: 1fr;
-                }
-                .figure {
-                    flex-direction: row;
-                    align-items: center;
-                    justify-content: space-between;
-                }
-                .card-actions {
-                    justify-content: space-between;
-                }
-                .card-actions button {
-                    flex: 1 1 auto;
-                    text-align: center;
-                    padding: 9px 6px;
-                }
-                .modal-overlay {
-                    padding: 14px 10px;
-                }
-                .modal-actions {
-                    flex-direction: column-reverse;
-                }
-                .modal-actions button {
-                    width: 100%;
-                }
+                header.topbar { flex-direction: column; align-items: stretch; }
+                .brand { justify-content: center; }
+                .topbar .search { order: 3; flex: 1 1 100%; }
+                .controls { order: 2; justify-content: space-between; width: 100%; }
+                .privacy-btn { flex: 1 1 auto; justify-content: center; }
+                .add-bar { flex-direction: column; align-items: stretch; }
+                #addProductBtn, #addOrderBtn { width: 100%; text-align: center; }
+                .stat-chips { justify-content: space-between; }
+                .chip { flex: 1 1 calc(50% - 8px); }
+                .card-main { flex-direction: column; align-items: stretch; }
+                .card-figures { grid-template-columns: 1fr; }
+                .figure { flex-direction: row; align-items: center; justify-content: space-between; }
+                .card-actions { justify-content: space-between; }
+                .card-actions button { flex: 1 1 auto; text-align: center; padding: 9px 6px; }
+                .modal-overlay { padding: 14px 10px; }
+                .modal-actions { flex-direction: column-reverse; }
+                .modal-actions button { width: 100%; }
             }
 
             @media (max-width: 360px) {
-                .brand h1 {
-                    font-size: 1.1rem;
-                }
-                .chip {
-                    flex: 1 1 100%;
-                }
+                .brand h1 { font-size: 1.1rem; }
+                .chip { flex: 1 1 100%; }
             }
         </style>
     </head>
@@ -1191,9 +956,7 @@
                     </div>
                 </section>
                 <section id="orderList" class="order-list"></section>
-                <p id="emptyOrders" class="empty-state" hidden>
-                    No orders yet. Log Shopee, Lazada, or other purchases — enter qty &amp; amount paid, then see suggested selling prices from your target margin or markup.
-                </p>
+                <p id="emptyOrders" class="empty-state" hidden>No orders yet. Log Shopee, Lazada, or other purchases — enter qty &amp; amount paid, then see suggested selling prices from your target margin or markup.</p>
             </div>
 
             <p class="hint">Tip: press <strong>P</strong> anytime to quickly toggle privacy mode. Tap a masked number to peek at it for a few seconds.</p>
@@ -1314,7 +1077,7 @@
                     <div id="orderItems"></div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <label>
                         Subtotal (before discounts)
                         <input id="oSubtotal" type="number" step="0.01" min="0" placeholder="0.00" />
@@ -1478,7 +1241,9 @@
 
                 // ---------- Utilities ----------
                 function escapeHtml(str) {
-                    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+                    return String(str).replace(/[&<>"']/g, (c) =>
+                        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+                    );
                 }
 
                 function fmtMoney(n) {
@@ -1706,7 +1471,8 @@
                     });
                     document.getElementById("productsPanel").classList.toggle("active", tab === "products");
                     document.getElementById("ordersPanel").classList.toggle("active", tab === "orders");
-                    document.getElementById("searchInput").placeholder = tab === "products" ? "Search product or category…" : "Search order, platform, ref…";
+                    document.getElementById("searchInput").placeholder =
+                        tab === "products" ? "Search product or category…" : "Search order, platform, ref…";
                     if (tab === "products") {
                         renderList(document.getElementById("searchInput").value);
                         renderSummary();
@@ -1746,7 +1512,7 @@
                 }
 
                 async function persistProductOrder() {
-                    sortProductsInPlace();
+                    // Keep current array order — do NOT re-sort here (that would undo a drag).
                     const writes = state.products.map((p, i) => {
                         p.sortOrder = i;
                         return dbPut("products", p);
@@ -1759,32 +1525,38 @@
                     const handle = card.querySelector(".drag-handle");
                     if (!handle) return;
 
-                    handle.addEventListener("mousedown", () => {
+                    let dragFromHandle = false;
+
+                    handle.addEventListener("pointerdown", () => {
+                        dragFromHandle = true;
                         card.draggable = true;
                     });
-                    handle.addEventListener("mouseup", () => {
-                        card.draggable = false;
-                    });
-                    handle.addEventListener(
-                        "touchstart",
-                        () => {
-                            card.draggable = true;
-                        },
-                        { passive: true },
-                    );
+                    const clearHandleFlag = () => {
+                        dragFromHandle = false;
+                        // leave draggable true until dragend; cleared there
+                    };
+                    handle.addEventListener("pointerup", clearHandleFlag);
+                    handle.addEventListener("pointercancel", clearHandleFlag);
 
                     card.addEventListener("dragstart", (e) => {
-                        if (!card.draggable) {
+                        if (!dragFromHandle) {
                             e.preventDefault();
+                            card.draggable = false;
                             return;
                         }
                         card.classList.add("dragging");
                         e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("text/plain", String(card.dataset.id));
+                        try {
+                            e.dataTransfer.setData("text/plain", String(card.dataset.id));
+                        } catch (_) {}
+                        // store on list for browsers that block getData outside drop
+                        listEl._dragProductId = String(card.dataset.id);
                     });
                     card.addEventListener("dragend", () => {
                         card.classList.remove("dragging");
                         card.draggable = false;
+                        dragFromHandle = false;
+                        listEl._dragProductId = null;
                         listEl.querySelectorAll(".product-card.drag-over").forEach((c) => c.classList.remove("drag-over"));
                     });
                     card.addEventListener("dragover", (e) => {
@@ -1797,17 +1569,23 @@
                         });
                         card.classList.add("drag-over");
                     });
-                    card.addEventListener("dragleave", () => {
-                        card.classList.remove("drag-over");
+                    card.addEventListener("dragleave", (e) => {
+                        // only clear when leaving the card entirely
+                        if (!card.contains(e.relatedTarget)) {
+                            card.classList.remove("drag-over");
+                        }
                     });
                     card.addEventListener("drop", async (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         card.classList.remove("drag-over");
-                        const fromId = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                        let fromId = parseInt(
+                            (e.dataTransfer && e.dataTransfer.getData("text/plain")) || listEl._dragProductId || "",
+                            10
+                        );
                         const toId = parseInt(card.dataset.id, 10);
                         if (!fromId || !toId || fromId === toId) return;
 
-                        sortProductsInPlace();
                         const fromIdx = state.products.findIndex((p) => p.id === fromId);
                         const toIdx = state.products.findIndex((p) => p.id === toId);
                         if (fromIdx < 0 || toIdx < 0) return;
@@ -1829,7 +1607,10 @@
 
                     const items = state.products.filter((p) => {
                         if (!filter) return true;
-                        return (p.name || "").toLowerCase().includes(filter) || (p.category || "").toLowerCase().includes(filter);
+                        return (
+                            (p.name || "").toLowerCase().includes(filter) ||
+                            (p.category || "").toLowerCase().includes(filter)
+                        );
                     });
 
                     listEl.innerHTML = "";
@@ -1881,10 +1662,12 @@
           </div>
           <div class="card-details" hidden>
             <ul class="cost-breakdown">
-              ${
-                  (product.costItems || []).map((c) => `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`).join("") ||
-                  "<li><span>No cost lines added</span><span></span></li>"
-              }
+              ${(product.costItems || [])
+                  .map(
+                      (c) =>
+                          `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`
+                  )
+                  .join("") || "<li><span>No cost lines added</span><span></span></li>"}
             </ul>
             ${
                 hist.length
@@ -1897,7 +1680,7 @@
                         .reverse()
                         .map(
                             (h) =>
-                                `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`,
+                                `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`
                         )
                         .join("")}
                   </ul>
@@ -1946,7 +1729,10 @@
                     document.getElementById("ordGross").textContent = fmtMoney(totals.reduce((s, t) => s + t.subtotal, 0));
                     document.getElementById("ordAfterV").textContent = fmtMoney(totals.reduce((s, t) => s + t.afterVoucher, 0));
                     document.getElementById("ordNet").textContent = fmtMoney(totals.reduce((s, t) => s + t.netCost, 0));
-                    document.getElementById("ordLines").textContent = state.orders.reduce((s, o) => s + (o.items || []).length, 0);
+                    document.getElementById("ordLines").textContent = state.orders.reduce(
+                        (s, o) => s + (o.items || []).length,
+                        0
+                    );
                 }
 
                 function renderOrders(filterText) {
@@ -1984,7 +1770,9 @@
                         card.className = "order-card";
                         card.dataset.id = order.id;
 
-                        const itemSummary = (order.items || []).map((it) => `${it.qty || 1}× ${it.name || "?"}`).join(", ");
+                        const itemSummary = (order.items || [])
+                            .map((it) => `${it.qty || 1}× ${it.name || "?"}`)
+                            .join(", ");
 
                         const tm = order.targetMargin;
                         const tk = order.targetMarkup;
@@ -2023,9 +1811,8 @@
             <li><span><strong>Gross cost</strong> (goods + full ship)</span><span class="priv-value amt"><strong>${fmtMoney(t.grossCost)}</strong></span></li>
             <li><span><strong>Net cost</strong> (after discounts)</span><span class="priv-value amt"><strong>${fmtMoney(t.netCost)}</strong></span></li>
           </ul>
-          ${
-              (t.lineDetails || []).length
-                  ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Per-item breakdown</h4>
+          ${(t.lineDetails || []).length
+              ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Per-item breakdown</h4>
             <div class="breakdown-scroll">
               <table class="breakdown-table" style="min-width:640px">
                 <thead>
@@ -2042,7 +1829,9 @@
                 <tbody>
                   ${t.lineDetails
                       .map((it) => {
-                          const hasT = (tm != null && tm !== "" && isFinite(Number(tm))) || (tk != null && tk !== "" && isFinite(Number(tk)));
+                          const hasT =
+                              (tm != null && tm !== "" && isFinite(Number(tm))) ||
+                              (tk != null && tk !== "" && isFinite(Number(tk)));
                           const sugG = hasT ? fmtSuggest(it.unitCostGross, tm, tk) : "—";
                           const sugN = hasT ? fmtSuggest(it.unitCostNet, tm, tk) : "—";
                           return `<tr>
@@ -2059,8 +1848,7 @@
                 </tbody>
               </table>
             </div>`
-                  : ""
-          }
+              : ""}
         </div>
       `;
 
@@ -2137,7 +1925,8 @@
                     const match = state.products.find((p) => (p.name || "").toLowerCase() === name);
                     if (match) {
                         state.matchedProductId = match.id;
-                        document.getElementById("nameMatchText").textContent = `Found existing product “${match.name}”. Quick update will edit it instead of creating a duplicate.`;
+                        document.getElementById("nameMatchText").textContent =
+                            `Found existing product “${match.name}”. Quick update will edit it instead of creating a duplicate.`;
                         banner.classList.add("visible");
                     } else {
                         banner.classList.remove("visible");
@@ -2153,8 +1942,13 @@
                     document.getElementById("fUnit").value = product ? product.unit || "" : "";
                     document.getElementById("fPrice").value = product ? product.sellingPrice : "";
                     document.getElementById("fTargetMargin").value =
-                        product && product.targetMargin != null ? product.targetMargin : state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
-                    document.getElementById("fTargetMarkup").value = product && product.targetMarkup != null ? product.targetMarkup : "";
+                        product && product.targetMargin != null
+                            ? product.targetMargin
+                            : state.settings.defaultMargin != null
+                              ? state.settings.defaultMargin
+                              : "";
+                    document.getElementById("fTargetMarkup").value =
+                        product && product.targetMarkup != null ? product.targetMarkup : "";
 
                     costLinesEl.innerHTML = "";
                     if (product && product.costItems && product.costItems.length) {
@@ -2269,9 +2063,13 @@
                     }
 
                     // Block accidental duplicate names when creating/editing
-                    const nameClash = state.products.find((p) => (p.name || "").toLowerCase() === name.toLowerCase() && p.id !== editingId);
+                    const nameClash = state.products.find(
+                        (p) => (p.name || "").toLowerCase() === name.toLowerCase() && p.id !== editingId
+                    );
                     if (nameClash) {
-                        alert(`Another product is already named “${nameClash.name}”. Use a unique name, or open that product to edit it.`);
+                        alert(
+                            `Another product is already named “${nameClash.name}”. Use a unique name, or open that product to edit it.`
+                        );
                         return;
                     }
 
@@ -2310,19 +2108,24 @@
                                 const ok = confirm(
                                     `Rename “${oldName}” → “${name}”?\n\n` +
                                         `This product is linked in ${links.lines} order line(s) across ${links.orders} order(s).\n` +
-                                        `Those order line names will be updated to keep data in sync.`,
+                                        `Those order line names will be updated to keep data in sync.`
                                 );
                                 if (!ok) return;
                                 renameSync = { oldName, newName: name, productId: editingId };
                             } else {
-                                const ok = confirm(`Rename “${oldName}” → “${name}”?\n\nNo linked order lines found. Continue?`);
+                                const ok = confirm(
+                                    `Rename “${oldName}” → “${name}”?\n\nNo linked order lines found. Continue?`
+                                );
                                 if (!ok) return;
                             }
                         }
                     } else {
                         product.createdAt = Date.now();
                         product.priceHistory = [];
-                        const maxOrder = state.products.reduce((m, p) => Math.max(m, p.sortOrder != null ? p.sortOrder : -1), -1);
+                        const maxOrder = state.products.reduce(
+                            (m, p) => Math.max(m, p.sortOrder != null ? p.sortOrder : -1),
+                            -1
+                        );
                         product.sortOrder = maxOrder + 1;
                         recordPriceHistory(product, null, newPrice, "Initial");
                     }
@@ -2335,9 +2138,15 @@
                     else state.products.push(product);
 
                     if (renameSync) {
-                        const result = await syncOrdersAfterProductRename(renameSync.productId, renameSync.oldName, renameSync.newName);
+                        const result = await syncOrdersAfterProductRename(
+                            renameSync.productId,
+                            renameSync.oldName,
+                            renameSync.newName
+                        );
                         if (result.lines > 0) {
-                            alert(`Product renamed.\nSynced ${result.lines} order line(s) in ${result.orders} order(s).`);
+                            alert(
+                                `Product renamed.\nSynced ${result.lines} order line(s) in ${result.orders} order(s).`
+                            );
                             renderOrders(document.getElementById("searchInput").value);
                             renderOrderSummary();
                         }
@@ -2421,7 +2230,8 @@
                     const bodyEl = document.getElementById("suggestReportBody");
                     const lines = t.lineDetails || [];
                     const hasTarget =
-                        (targetMargin != null && targetMargin !== "" && isFinite(Number(targetMargin))) || (targetMarkup != null && targetMarkup !== "" && isFinite(Number(targetMarkup)));
+                        (targetMargin != null && targetMargin !== "" && isFinite(Number(targetMargin))) ||
+                        (targetMarkup != null && targetMarkup !== "" && isFinite(Number(targetMarkup)));
 
                     if (!lines.length) {
                         emptyEl.hidden = false;
@@ -2524,8 +2334,13 @@
                     document.getElementById("oShipFee").value = order && order.shipFee != null ? order.shipFee : "";
                     document.getElementById("oShipDiscount").value = order && order.shipDiscount != null ? order.shipDiscount : "";
                     document.getElementById("oTargetMargin").value =
-                        order && order.targetMargin != null ? order.targetMargin : state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
-                    document.getElementById("oTargetMarkup").value = order && order.targetMarkup != null ? order.targetMarkup : "";
+                        order && order.targetMargin != null
+                            ? order.targetMargin
+                            : state.settings.defaultMargin != null
+                              ? state.settings.defaultMargin
+                              : "";
+                    document.getElementById("oTargetMarkup").value =
+                        order && order.targetMarkup != null ? order.targetMarkup : "";
 
                     orderItemsEl.innerHTML = "";
                     if (order && order.items && order.items.length) {
@@ -2567,7 +2382,9 @@
                         platform: document.getElementById("oPlatform").value,
                         ref: document.getElementById("oRef").value.trim(),
                         notes: document.getElementById("oNotes").value.trim(),
-                        date: document.getElementById("oDate").value ? new Date(document.getElementById("oDate").value).getTime() : Date.now(),
+                        date: document.getElementById("oDate").value
+                            ? new Date(document.getElementById("oDate").value).getTime()
+                            : Date.now(),
                         items,
                         subtotal: parseFloat(document.getElementById("oSubtotal").value) || subFromItems,
                         voucher: parseFloat(document.getElementById("oVoucher").value) || 0,
@@ -2630,7 +2447,8 @@
                 document.getElementById("settingsBtn").addEventListener("click", () => {
                     document.getElementById("setShopName").value = state.settings.shopName;
                     document.getElementById("setCurrency").value = state.settings.currency;
-                    document.getElementById("setDefaultMargin").value = state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
+                    document.getElementById("setDefaultMargin").value =
+                        state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
                     settingsModal.hidden = false;
                 });
                 // Do not close on overlay click — preserves typed settings
@@ -2657,7 +2475,9 @@
                 });
 
                 document.getElementById("exportCsv").addEventListener("click", () => {
-                    const rows = [["Name", "Category", "Unit", "Cost Breakdown", "Total Cost", "Selling Price", "Profit", "Margin %", "Markup %", "Target Margin %", "Target Markup %"]];
+                    const rows = [
+                        ["Name", "Category", "Unit", "Cost Breakdown", "Total Cost", "Selling Price", "Profit", "Margin %", "Markup %", "Target Margin %", "Target Markup %"],
+                    ];
                     state.products.forEach((p) => {
                         const t = computeTotals(p);
                         const breakdown = (p.costItems || []).map((c) => `${c.label}: ${c.amount}`).join(" | ");
@@ -2679,7 +2499,22 @@
                 });
 
                 document.getElementById("exportOrdersCsv").addEventListener("click", () => {
-                    const rows = [["Platform", "Ref", "Date", "Items", "Subtotal", "Voucher", "Ship Fee", "Ship Discount", "Net Cost", "Target Margin %", "Target Markup %", "Notes"]];
+                    const rows = [
+                        [
+                            "Platform",
+                            "Ref",
+                            "Date",
+                            "Items",
+                            "Subtotal",
+                            "Voucher",
+                            "Ship Fee",
+                            "Ship Discount",
+                            "Net Cost",
+                            "Target Margin %",
+                            "Target Markup %",
+                            "Notes",
+                        ],
+                    ];
                     state.orders.forEach((o) => {
                         const t = computeOrderTotals(o);
                         const itemsStr = (o.items || [])
@@ -2721,7 +2556,11 @@
                 async function init() {
                     db = await openDatabase();
 
-                    const [shopName, currency, defaultMargin] = await Promise.all([dbGetSetting("shopName"), dbGetSetting("currency"), dbGetSetting("defaultMargin")]);
+                    const [shopName, currency, defaultMargin] = await Promise.all([
+                        dbGetSetting("shopName"),
+                        dbGetSetting("currency"),
+                        dbGetSetting("defaultMargin"),
+                    ]);
                     if (shopName !== undefined) state.settings.shopName = shopName;
                     if (currency !== undefined) state.settings.currency = currency;
                     if (defaultMargin !== undefined) state.settings.defaultMargin = defaultMargin;
