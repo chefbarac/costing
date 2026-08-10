@@ -1,5 +1,5 @@
 const PREFIX = 'costing-cache';
-const CACHE_NAME = PREFIX + '-v2.0.10';
+const CACHE_NAME = PREFIX + '-v2.0.11';
 
 // Optional: pre-cache a few known static assets on install.
 // Not required for SWR to work — it'll cache things on first fetch anyway.

@@ -1885,6 +1885,7 @@
             <div class="card-actions">
               <button type="button" class="expand-btn">Details ▾</button>
               <button type="button" class="edit-btn">Edit</button>
+              <button type="button" class="copy-btn">Copy</button>
               <button type="button" class="delete-btn">Delete</button>
             </div>
           </div>
@@ -1932,6 +1933,8 @@
                         });
 
                         card.querySelector(".edit-btn").addEventListener("click", () => openForm(product));
+
+                        card.querySelector(".copy-btn").addEventListener("click", () => openForm(product, { asCopy: true }));
 
                         card.querySelector(".delete-btn").addEventListener("click", async () => {
                             if (confirm(`Delete "${product.name}"? This can't be undone.`)) {
@@ -2150,17 +2153,19 @@
                     const match = state.products.find((p) => (p.name || "").toLowerCase() === name);
                     if (match) {
                         state.matchedProductId = match.id;
-                        document.getElementById("nameMatchText").textContent = `Found existing product “${match.name}”. Quick update will edit it instead of creating a duplicate.`;
+                        document.getElementById("nameMatchText").textContent = `Found existing product “${match.name}”. Quick update will edit it instead of creating a copy.`;
                         banner.classList.add("visible");
                     } else {
                         banner.classList.remove("visible");
                     }
                 }
 
-                function openForm(product) {
-                    state.editingId = product ? product.id : null;
+                function openForm(product, opts) {
+                    const asCopy = opts && opts.asCopy;
+                    // Copy opens the form pre-filled as a *new* product — no auto-save.
+                    state.editingId = product && !asCopy ? product.id : null;
                     state.matchedProductId = null;
-                    document.getElementById("formTitle").textContent = product ? "Edit product" : "Add product";
+                    document.getElementById("formTitle").textContent = asCopy ? "Copy product" : product ? "Edit product" : "Add product";
                     document.getElementById("fName").value = product ? product.name : "";
                     document.getElementById("fCategory").value = product ? product.category || "" : "";
                     document.getElementById("fUnit").value = product ? product.unit || "" : "";
@@ -2177,6 +2182,8 @@
                     }
                     updatePreview();
                     document.getElementById("nameMatchBanner").classList.remove("visible");
+                    // For copy, run name-match so the banner appears (same name exists).
+                    if (asCopy) checkNameMatch();
                     formModal.hidden = false;
                     document.getElementById("fName").focus();
                 }
