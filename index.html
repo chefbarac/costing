@@ -1316,8 +1316,8 @@
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
                     <label>
-                        Subtotal (before discounts)
-                        <input id="oSubtotal" type="number" step="0.01" min="0" placeholder="0.00" />
+                        Subtotal (before discounts) <span style="font-weight: 400">(from line items)</span>
+                        <input id="oSubtotal" type="number" step="0.01" min="0" placeholder="0.00" readonly tabindex="-1" style="background: rgba(28, 26, 23, 0.04); cursor: default" />
                     </label>
                     <label>
                         Voucher / coupon discount
@@ -1511,7 +1511,8 @@
                     const items = order.items || [];
                     // amount = total paid for the line qty (goods only, before voucher/shipping)
                     const itemsSum = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
-                    const subtotal = Number(order.subtotal) || itemsSum;
+                    // Subtotal is always the sum of line item amounts (read-only in the form).
+                    const subtotal = itemsSum;
                     const voucher = Number(order.voucher) || 0;
                     const shipFee = Number(order.shipFee) || 0;
                     const shipDiscount = Number(order.shipDiscount) || 0;
@@ -2511,12 +2512,11 @@
                     const items = readOrderItems();
                     const subFromItems = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
                     const subInput = document.getElementById("oSubtotal");
-                    if (!subInput.dataset.touched) {
-                        subInput.value = subFromItems ? subFromItems.toFixed(2) : "";
-                    }
+                    // Subtotal is read-only — always derived from line item amounts.
+                    subInput.value = subFromItems > 0 || items.length ? subFromItems.toFixed(2) : "";
                     const draft = {
                         items,
-                        subtotal: parseFloat(subInput.value) || subFromItems,
+                        subtotal: subFromItems,
                         voucher: parseFloat(document.getElementById("oVoucher").value) || 0,
                         shipFee: parseFloat(document.getElementById("oShipFee").value) || 0,
                         shipDiscount: parseFloat(document.getElementById("oShipDiscount").value) || 0,
@@ -2543,8 +2543,6 @@
                     } else {
                         dateEl.value = new Date().toISOString().slice(0, 10);
                     }
-                    document.getElementById("oSubtotal").value = order && order.subtotal != null ? order.subtotal : "";
-                    document.getElementById("oSubtotal").dataset.touched = order && order.subtotal != null ? "1" : "";
                     document.getElementById("oVoucher").value = order && order.voucher != null ? order.voucher : "";
                     document.getElementById("oShipFee").value = order && order.shipFee != null ? order.shipFee : "";
                     document.getElementById("oShipDiscount").value = order && order.shipDiscount != null ? order.shipDiscount : "";
@@ -2558,6 +2556,8 @@
                     } else {
                         addOrderItemRow({});
                     }
+
+                    // Subtotal is read-only and always computed from line items in updateOrderPreview.
                     updateOrderPreview();
                     orderModal.hidden = false;
                 }
@@ -2577,10 +2577,6 @@
                 ["oVoucher", "oShipFee", "oShipDiscount", "oTargetMargin", "oTargetMarkup"].forEach((id) => {
                     document.getElementById(id).addEventListener("input", updateOrderPreview);
                 });
-                document.getElementById("oSubtotal").addEventListener("input", () => {
-                    document.getElementById("oSubtotal").dataset.touched = "1";
-                    updateOrderPreview();
-                });
                 // Do not close on overlay click — preserves typed data
 
                 document.getElementById("saveOrder").addEventListener("click", async () => {
@@ -2594,7 +2590,7 @@
                         notes: document.getElementById("oNotes").value.trim(),
                         date: document.getElementById("oDate").value ? new Date(document.getElementById("oDate").value).getTime() : Date.now(),
                         items,
-                        subtotal: parseFloat(document.getElementById("oSubtotal").value) || subFromItems,
+                        subtotal: subFromItems,
                         voucher: parseFloat(document.getElementById("oVoucher").value) || 0,
                         shipFee: parseFloat(document.getElementById("oShipFee").value) || 0,
                         shipDiscount: parseFloat(document.getElementById("oShipDiscount").value) || 0,
