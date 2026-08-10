@@ -525,7 +525,7 @@
             }
             .history-chart {
                 width: 100%;
-                height: 120px;
+                height: 160px;
                 background: rgba(28, 26, 23, 0.03);
                 border-radius: 8px;
                 border: 1px solid var(--line);
@@ -534,23 +534,38 @@
                 list-style: none;
                 margin: 8px 0 0;
                 padding: 0;
-                max-height: 140px;
+                max-height: 160px;
                 overflow-y: auto;
                 font-size: 0.8rem;
             }
             .history-list li {
-                display: flex;
-                justify-content: space-between;
+                display: grid;
+                grid-template-columns: minmax(72px, 1.1fr) minmax(64px, 0.9fr) minmax(64px, 0.9fr) minmax(60px, 1.2fr);
                 gap: 8px;
-                padding: 3px 0;
+                align-items: baseline;
+                padding: 4px 0;
                 border-bottom: 1px solid rgba(214, 205, 184, 0.5);
+            }
+            .history-list .history-list-header {
+                font-size: 0.65rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--ink-soft);
+                font-weight: 600;
+                border-bottom-color: var(--line);
+                padding-bottom: 6px;
             }
             .history-list .h-date {
                 color: var(--ink-soft);
             }
+            .history-list .h-cost,
+            .history-list .h-price {
+                text-align: right;
+            }
             .history-list .h-note {
                 color: var(--ink-soft);
                 font-size: 0.75rem;
+                text-align: right;
             }
 
             .empty-state {
@@ -1601,18 +1616,42 @@
 
                 function recordPriceHistory(product, oldPrice, newPrice, note) {
                     if (!product.priceHistory) product.priceHistory = [];
+                    const newCost = computeTotals(product).totalCost;
                     const last = product.priceHistory[product.priceHistory.length - 1];
-                    if (last && Math.abs(last.price - newPrice) < 0.001) return;
+                    const priceSame = last && Math.abs(last.price - newPrice) < 0.001;
+                    const costSame = last && Math.abs((last.cost || 0) - newCost) < 0.001;
+                    // Skip only when both price and cost are unchanged
+                    if (priceSame && costSame) return;
+
+                    let autoNote = note;
+                    if (!autoNote) {
+                        if (oldPrice == null) autoNote = "Initial";
+                        else if (!priceSame && !costSame) autoNote = "Price & cost update";
+                        else if (!priceSame) autoNote = "Price update";
+                        else autoNote = "Cost update";
+                    }
+
                     product.priceHistory.push({
                         date: Date.now(),
                         price: newPrice,
-                        cost: computeTotals(product).totalCost,
-                        note: note || (oldPrice != null ? "Price update" : "Initial"),
+                        cost: newCost,
+                        note: autoNote,
                     });
                     // keep last 50 entries
                     if (product.priceHistory.length > 50) {
                         product.priceHistory = product.priceHistory.slice(-50);
                     }
+                }
+
+                function movingAverage(values, window) {
+                    const out = [];
+                    for (let i = 0; i < values.length; i++) {
+                        const start = Math.max(0, i - window + 1);
+                        let sum = 0;
+                        for (let j = start; j <= i; j++) sum += values[j];
+                        out.push(sum / (i - start + 1));
+                    }
+                    return out;
                 }
 
                 function drawHistoryChart(canvas, history) {
@@ -1625,20 +1664,35 @@
                     ctx.scale(dpr, dpr);
                     const w = rect.width;
                     const h = rect.height;
-                    const pad = { t: 12, r: 12, b: 22, l: 40 };
+                    // Extra top pad when MA legend is shown
+                    const showMA = history.length >= 3;
+                    const pad = { t: showMA ? 40 : 28, r: 12, b: 22, l: 44 };
                     const plotW = w - pad.l - pad.r;
                     const plotH = h - pad.t - pad.b;
 
                     ctx.clearRect(0, 0, w, h);
 
-                    const prices = history.map((x) => x.price);
-                    let minP = Math.min(...prices);
-                    let maxP = Math.max(...prices);
-                    if (minP === maxP) {
-                        minP = minP * 0.9;
-                        maxP = maxP * 1.1 || 1;
+                    const prices = history.map((x) => Number(x.price) || 0);
+                    const costs = history.map((x) => Number(x.cost) || 0);
+                    // Adaptive SMA window: 3 for short series, up to 5 for longer
+                    const maWindow = history.length >= 10 ? 5 : 3;
+                    const priceMA = showMA ? movingAverage(prices, maWindow) : null;
+                    const costMA = showMA ? movingAverage(costs, maWindow) : null;
+
+                    const allVals = [...prices, ...costs];
+                    if (priceMA) allVals.push(...priceMA);
+                    if (costMA) allVals.push(...costMA);
+                    let minV = Math.min(...allVals);
+                    let maxV = Math.max(...allVals);
+                    if (minV === maxV) {
+                        minV = minV * 0.9;
+                        maxV = maxV * 1.1 || 1;
                     }
-                    const range = maxP - minP || 1;
+                    // small padding so lines aren't flush with edges
+                    const padV = (maxV - minV) * 0.05 || 1;
+                    minV -= padV;
+                    maxV += padV;
+                    const range = maxV - minV || 1;
 
                     // grid
                     ctx.strokeStyle = "rgba(28,26,23,0.08)";
@@ -1656,35 +1710,122 @@
                     ctx.font = "10px IBM Plex Mono, monospace";
                     ctx.textAlign = "right";
                     for (let i = 0; i <= 3; i++) {
-                        const val = maxP - (range * i) / 3;
+                        const val = maxV - (range * i) / 3;
                         const y = pad.t + (plotH * i) / 3;
                         ctx.fillText(val.toFixed(0), pad.l - 4, y + 3);
                     }
 
-                    // line
-                    ctx.strokeStyle = "#00aeef";
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    history.forEach((pt, i) => {
-                        const x = pad.l + (history.length === 1 ? plotW / 2 : (i / (history.length - 1)) * plotW);
-                        const y = pad.t + plotH - ((pt.price - minP) / range) * plotH;
-                        if (i === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
-                    });
-                    ctx.stroke();
+                    function xAt(i) {
+                        return pad.l + (history.length === 1 ? plotW / 2 : (i / (history.length - 1)) * plotW);
+                    }
+                    function yAt(val) {
+                        return pad.t + plotH - ((val - minV) / range) * plotH;
+                    }
 
-                    // dots
-                    history.forEach((pt, i) => {
-                        const x = pad.l + (history.length === 1 ? plotW / 2 : (i / (history.length - 1)) * plotW);
-                        const y = pad.t + plotH - ((pt.price - minP) / range) * plotH;
+                    function drawSeries(values, color, opts) {
+                        opts = opts || {};
+                        const dashed = !!opts.dashed;
+                        const lineWidth = opts.lineWidth != null ? opts.lineWidth : 2;
+                        const withDots = opts.dots !== false;
+                        const alpha = opts.alpha != null ? opts.alpha : 1;
+
+                        ctx.save();
+                        ctx.globalAlpha = alpha;
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = lineWidth;
+                        ctx.setLineDash(dashed ? [5, 4] : []);
                         ctx.beginPath();
-                        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-                        ctx.fillStyle = "#00aeef";
-                        ctx.fill();
-                        ctx.strokeStyle = "#fbf8f2";
-                        ctx.lineWidth = 1.5;
+                        values.forEach((val, i) => {
+                            const x = xAt(i);
+                            const y = yAt(val);
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        });
                         ctx.stroke();
-                    });
+                        ctx.setLineDash([]);
+
+                        if (withDots) {
+                            values.forEach((val, i) => {
+                                const x = xAt(i);
+                                const y = yAt(val);
+                                ctx.beginPath();
+                                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                                ctx.fillStyle = color;
+                                ctx.fill();
+                                ctx.strokeStyle = "#fbf8f2";
+                                ctx.lineWidth = 1.5;
+                                ctx.stroke();
+                            });
+                        }
+                        ctx.restore();
+                    }
+
+                    // Moving averages first (underneath), then raw series
+                    if (costMA) drawSeries(costMA, "#e8138f", { dashed: true, lineWidth: 1.5, dots: false, alpha: 0.4 });
+                    if (priceMA) drawSeries(priceMA, "#00aeef", { dashed: false, lineWidth: 1.5, dots: false, alpha: 0.4 });
+                    // Cost line (magenta, dashed) then price line (cyan, solid) so price sits on top
+                    drawSeries(costs, "#e8138f", { dashed: true });
+                    drawSeries(prices, "#00aeef", { dashed: false });
+
+                    // Legend
+                    ctx.font = "10px Inter, sans-serif";
+                    ctx.textAlign = "left";
+                    let lx = pad.l;
+                    const ly = 12;
+                    function legendItem(color, label, dashed, thin) {
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = thin ? 1.5 : 2;
+                        ctx.globalAlpha = thin ? 0.55 : 1;
+                        ctx.setLineDash(dashed ? [4, 3] : []);
+                        ctx.beginPath();
+                        ctx.moveTo(lx, ly);
+                        ctx.lineTo(lx + 14, ly);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        if (!thin) {
+                            ctx.globalAlpha = 1;
+                            ctx.fillStyle = color;
+                            ctx.beginPath();
+                            ctx.arc(lx + 7, ly, 2.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = "#5b564c";
+                        ctx.fillText(label, lx + 18, ly + 3);
+                        lx += ctx.measureText(label).width + 28;
+                    }
+                    legendItem("#00aeef", "Price", false, false);
+                    legendItem("#e8138f", "Cost", true, false);
+                    if (showMA) {
+                        // second row for MA labels
+                        lx = pad.l;
+                        const ly2 = 26;
+                        const savedLy = ly;
+                        // reuse helper with fixed y via temporary override
+                        ctx.strokeStyle = "#00aeef";
+                        ctx.lineWidth = 1.5;
+                        ctx.globalAlpha = 0.55;
+                        ctx.beginPath();
+                        ctx.moveTo(lx, ly2);
+                        ctx.lineTo(lx + 14, ly2);
+                        ctx.stroke();
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = "#5b564c";
+                        ctx.fillText("Price MA" + maWindow, lx + 18, ly2 + 3);
+                        lx += ctx.measureText("Price MA" + maWindow).width + 28;
+                        ctx.strokeStyle = "#e8138f";
+                        ctx.lineWidth = 1.5;
+                        ctx.globalAlpha = 0.55;
+                        ctx.setLineDash([4, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(lx, ly2);
+                        ctx.lineTo(lx + 14, ly2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = "#5b564c";
+                        ctx.fillText("Cost MA" + maWindow, lx + 18, ly2 + 3);
+                    }
 
                     // first / last date labels
                     if (history.length >= 1) {
@@ -1873,7 +2014,7 @@
               <div class="meta">
                 ${product.category ? `<span class="tag">${escapeHtml(product.category)}</span>` : ""}
                 ${product.unit ? `<span>${escapeHtml(product.unit)}</span>` : ""}
-                ${hist.length > 1 ? `<span class="tag">${hist.length} price pts</span>` : ""}
+                ${hist.length > 1 ? `<span class="tag">${hist.length} history pts</span>` : ""}
               </div>
             </div>
             <div class="card-figures">
@@ -1900,15 +2041,16 @@
             ${
                 hist.length
                     ? `<div class="history-section">
-                  <h4>Price history</h4>
-                  <canvas class="history-chart" height="120"></canvas>
+                  <h4>Price &amp; cost history</h4>
+                  <canvas class="history-chart" height="160"></canvas>
                   <ul class="history-list">
+                    <li class="history-list-header"><span class="h-date">Date</span><span class="h-cost">Cost</span><span class="h-price">Price</span><span class="h-note">Note</span></li>
                     ${hist
                         .slice()
                         .reverse()
                         .map(
                             (h) =>
-                                `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`,
+                                `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono priv-value amt h-cost">${fmtMoney(h.cost != null ? h.cost : 0)}</span><span class="mono price-visible h-price">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`,
                         )
                         .join("")}
                   </ul>
@@ -2321,7 +2463,8 @@
                         product.priceHistory = existing && existing.priceHistory ? [...existing.priceHistory] : [];
                         product.sortOrder = existing && existing.sortOrder != null ? existing.sortOrder : 0;
                         const oldPrice = existing ? Number(existing.sellingPrice) : null;
-                        recordPriceHistory(product, oldPrice, newPrice, oldPrice !== newPrice ? "Price/cost update" : "Edit");
+                        // Records a point when price and/or cost changed; skips if both unchanged.
+                        recordPriceHistory(product, oldPrice, newPrice);
 
                         const oldName = existing ? existing.name : "";
                         const isRename = oldName && oldName.toLowerCase() !== name.toLowerCase();
