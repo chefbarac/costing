@@ -322,6 +322,50 @@
                 box-shadow: var(--shadow);
                 padding: 14px 16px;
             }
+            .product-card {
+                display: flex;
+                gap: 8px;
+                align-items: stretch;
+            }
+            .product-card .card-body {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+            .drag-handle {
+                flex: 0 0 auto;
+                width: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--ink-soft);
+                cursor: grab;
+                user-select: none;
+                font-size: 1rem;
+                letter-spacing: -2px;
+                border-radius: 6px;
+                align-self: stretch;
+            }
+            .drag-handle:hover {
+                background: rgba(28, 26, 23, 0.05);
+                color: var(--ink);
+            }
+            .drag-handle:active,
+            .product-card.dragging .drag-handle {
+                cursor: grabbing;
+            }
+            .product-card.dragging {
+                opacity: 0.55;
+                border-style: dashed;
+            }
+            .product-card.drag-over {
+                border-color: var(--cyan);
+                box-shadow: 0 0 0 2px rgba(0, 174, 239, 0.25);
+            }
+            .product-list.reordering-disabled .drag-handle {
+                opacity: 0.35;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
             .card-main {
                 display: flex;
                 align-items: center;
@@ -1692,10 +1736,96 @@
                     document.getElementById("chipMargin").textContent = count ? fmtPct(avgMargin) : "—";
                 }
 
+                function sortProductsInPlace() {
+                    state.products.sort((a, b) => {
+                        const ao = a.sortOrder != null ? a.sortOrder : a.id || 0;
+                        const bo = b.sortOrder != null ? b.sortOrder : b.id || 0;
+                        if (ao !== bo) return ao - bo;
+                        return (a.id || 0) - (b.id || 0);
+                    });
+                }
+
+                async function persistProductOrder() {
+                    sortProductsInPlace();
+                    const writes = state.products.map((p, i) => {
+                        p.sortOrder = i;
+                        return dbPut("products", p);
+                    });
+                    await Promise.all(writes);
+                }
+
+                function bindProductDrag(card, listEl, filterActive) {
+                    if (filterActive) return;
+                    const handle = card.querySelector(".drag-handle");
+                    if (!handle) return;
+
+                    handle.addEventListener("mousedown", () => {
+                        card.draggable = true;
+                    });
+                    handle.addEventListener("mouseup", () => {
+                        card.draggable = false;
+                    });
+                    handle.addEventListener(
+                        "touchstart",
+                        () => {
+                            card.draggable = true;
+                        },
+                        { passive: true },
+                    );
+
+                    card.addEventListener("dragstart", (e) => {
+                        if (!card.draggable) {
+                            e.preventDefault();
+                            return;
+                        }
+                        card.classList.add("dragging");
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", String(card.dataset.id));
+                    });
+                    card.addEventListener("dragend", () => {
+                        card.classList.remove("dragging");
+                        card.draggable = false;
+                        listEl.querySelectorAll(".product-card.drag-over").forEach((c) => c.classList.remove("drag-over"));
+                    });
+                    card.addEventListener("dragover", (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        const dragging = listEl.querySelector(".product-card.dragging");
+                        if (!dragging || dragging === card) return;
+                        listEl.querySelectorAll(".product-card.drag-over").forEach((c) => {
+                            if (c !== card) c.classList.remove("drag-over");
+                        });
+                        card.classList.add("drag-over");
+                    });
+                    card.addEventListener("dragleave", () => {
+                        card.classList.remove("drag-over");
+                    });
+                    card.addEventListener("drop", async (e) => {
+                        e.preventDefault();
+                        card.classList.remove("drag-over");
+                        const fromId = parseInt(e.dataTransfer.getData("text/plain"), 10);
+                        const toId = parseInt(card.dataset.id, 10);
+                        if (!fromId || !toId || fromId === toId) return;
+
+                        sortProductsInPlace();
+                        const fromIdx = state.products.findIndex((p) => p.id === fromId);
+                        const toIdx = state.products.findIndex((p) => p.id === toId);
+                        if (fromIdx < 0 || toIdx < 0) return;
+
+                        const [moved] = state.products.splice(fromIdx, 1);
+                        state.products.splice(toIdx, 0, moved);
+                        await persistProductOrder();
+                        renderList(document.getElementById("searchInput").value);
+                    });
+                }
+
                 function renderList(filterText) {
                     const listEl = document.getElementById("productList");
                     const emptyEl = document.getElementById("emptyState");
                     const filter = (filterText || "").trim().toLowerCase();
+                    const filterActive = !!filter;
+
+                    sortProductsInPlace();
 
                     const items = state.products.filter((p) => {
                         if (!filter) return true;
@@ -1703,6 +1833,7 @@
                     });
 
                     listEl.innerHTML = "";
+                    listEl.classList.toggle("reordering-disabled", filterActive);
                     emptyEl.hidden = state.products.length > 0;
 
                     if (state.products.length > 0 && items.length === 0) {
@@ -1724,53 +1855,56 @@
                         const hist = product.priceHistory || [];
 
                         card.innerHTML = `
-        <div class="card-main">
-          <div class="card-title">
-            <h3>${escapeHtml(product.name)}</h3>
-            <div class="meta">
-              ${product.category ? `<span class="tag">${escapeHtml(product.category)}</span>` : ""}
-              ${product.unit ? `<span>${escapeHtml(product.unit)}</span>` : ""}
-              ${hist.length > 1 ? `<span class="tag">${hist.length} price pts</span>` : ""}
+        <div class="drag-handle" title="${filterActive ? "Clear search to reorder" : "Drag to reorder"}" aria-label="Drag to reorder">⋮⋮</div>
+        <div class="card-body">
+          <div class="card-main">
+            <div class="card-title">
+              <h3>${escapeHtml(product.name)}</h3>
+              <div class="meta">
+                ${product.category ? `<span class="tag">${escapeHtml(product.category)}</span>` : ""}
+                ${product.unit ? `<span>${escapeHtml(product.unit)}</span>` : ""}
+                ${hist.length > 1 ? `<span class="tag">${hist.length} price pts</span>` : ""}
+              </div>
+            </div>
+            <div class="card-figures">
+              <div class="figure"><span class="label">Cost</span><span class="value priv-value amt">${fmtMoney(t.totalCost)}</span></div>
+              <div class="figure"><span class="label">Price</span><span class="value price-visible">${fmtMoney(t.price)}</span></div>
+              <div class="figure"><span class="label">Profit</span><span class="value priv-value amt ${profitClass}">${fmtMoney(t.profit)}</span></div>
+              <div class="figure"><span class="label">Margin</span><span class="value priv-value pct ${marginClass}">${fmtPct(t.margin)}</span></div>
+              <div class="figure"><span class="label">Markup</span><span class="value priv-value pct">${isFinite(t.markup) ? fmtPct(t.markup) : "—"}</span></div>
+            </div>
+            <div class="card-actions">
+              <button type="button" class="expand-btn">Details ▾</button>
+              <button type="button" class="edit-btn">Edit</button>
+              <button type="button" class="delete-btn">Delete</button>
             </div>
           </div>
-          <div class="card-figures">
-            <div class="figure"><span class="label">Cost</span><span class="value priv-value amt">${fmtMoney(t.totalCost)}</span></div>
-            <div class="figure"><span class="label">Price</span><span class="value price-visible">${fmtMoney(t.price)}</span></div>
-            <div class="figure"><span class="label">Profit</span><span class="value priv-value amt ${profitClass}">${fmtMoney(t.profit)}</span></div>
-            <div class="figure"><span class="label">Margin</span><span class="value priv-value pct ${marginClass}">${fmtPct(t.margin)}</span></div>
-            <div class="figure"><span class="label">Markup</span><span class="value priv-value pct">${isFinite(t.markup) ? fmtPct(t.markup) : "—"}</span></div>
-          </div>
-          <div class="card-actions">
-            <button type="button" class="expand-btn">Details ▾</button>
-            <button type="button" class="edit-btn">Edit</button>
-            <button type="button" class="delete-btn">Delete</button>
-          </div>
-        </div>
-        <div class="card-details" hidden>
-          <ul class="cost-breakdown">
+          <div class="card-details" hidden>
+            <ul class="cost-breakdown">
+              ${
+                  (product.costItems || []).map((c) => `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`).join("") ||
+                  "<li><span>No cost lines added</span><span></span></li>"
+              }
+            </ul>
             ${
-                (product.costItems || []).map((c) => `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`).join("") ||
-                "<li><span>No cost lines added</span><span></span></li>"
+                hist.length
+                    ? `<div class="history-section">
+                  <h4>Price history</h4>
+                  <canvas class="history-chart" height="120"></canvas>
+                  <ul class="history-list">
+                    ${hist
+                        .slice()
+                        .reverse()
+                        .map(
+                            (h) =>
+                                `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`,
+                        )
+                        .join("")}
+                  </ul>
+                </div>`
+                    : ""
             }
-          </ul>
-          ${
-              hist.length
-                  ? `<div class="history-section">
-                <h4>Price history</h4>
-                <canvas class="history-chart" height="120"></canvas>
-                <ul class="history-list">
-                  ${hist
-                      .slice()
-                      .reverse()
-                      .map(
-                          (h) =>
-                              `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`,
-                      )
-                      .join("")}
-                </ul>
-              </div>`
-                  : ""
-          }
+          </div>
         </div>
       `;
 
@@ -1794,11 +1928,13 @@
                             if (confirm(`Delete "${product.name}"? This can't be undone.`)) {
                                 await dbDelete("products", product.id);
                                 state.products = state.products.filter((p) => p.id !== product.id);
+                                await persistProductOrder();
                                 renderList(document.getElementById("searchInput").value);
                                 renderSummary();
                             }
                         });
 
+                        bindProductDrag(card, listEl, filterActive);
                         listEl.appendChild(card);
                     });
                 }
@@ -2162,6 +2298,7 @@
                         const existing = state.products.find((p) => p.id === editingId);
                         product.createdAt = existing ? existing.createdAt : Date.now();
                         product.priceHistory = existing && existing.priceHistory ? [...existing.priceHistory] : [];
+                        product.sortOrder = existing && existing.sortOrder != null ? existing.sortOrder : 0;
                         const oldPrice = existing ? Number(existing.sellingPrice) : null;
                         recordPriceHistory(product, oldPrice, newPrice, oldPrice !== newPrice ? "Price/cost update" : "Edit");
 
@@ -2185,6 +2322,8 @@
                     } else {
                         product.createdAt = Date.now();
                         product.priceHistory = [];
+                        const maxOrder = state.products.reduce((m, p) => Math.max(m, p.sortOrder != null ? p.sortOrder : -1), -1);
+                        product.sortOrder = maxOrder + 1;
                         recordPriceHistory(product, null, newPrice, "Initial");
                     }
 
@@ -2600,6 +2739,18 @@
                             }
                         }
                     });
+                    // normalize sortOrder for older products
+                    sortProductsInPlace();
+                    let needsOrderPersist = false;
+                    state.products.forEach((p, i) => {
+                        if (p.sortOrder !== i) {
+                            p.sortOrder = i;
+                            needsOrderPersist = true;
+                        }
+                    });
+                    if (needsOrderPersist) {
+                        await Promise.all(state.products.map((p) => dbPut("products", p)));
+                    }
                     state.orders = await dbGetAll("orders");
 
                     renderSummary();
