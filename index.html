@@ -1860,7 +1860,7 @@
             <div class="meta">
               <span class="tag platform priv-value txt">${escapeHtml(order.platform || "Other")}</span>
               <span>${fmtDate(order.date)}</span>
-              ${order.notes ? `<span>${escapeHtml(order.notes)}</span>` : ""}
+              ${order.notes ? `<span class="priv-value txt">${escapeHtml(order.notes)}</span>` : ""}
             </div>
             <div class="order-net" style="margin-top:4px;font-size:0.78rem;color:var(--ink-soft)">${escapeHtml(itemSummary)}</div>
           </div>
