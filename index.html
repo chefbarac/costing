@@ -545,9 +545,41 @@
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
+                position: relative;
             }
             .modal.wide {
                 max-width: 640px;
+            }
+            .modal-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 4px;
+            }
+            .modal-header h2 {
+                font-size: 1.15rem;
+                margin: 0;
+            }
+            .modal-close {
+                flex: 0 0 auto;
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                border: 1px solid var(--line);
+                background: transparent;
+                color: var(--ink-soft);
+                font-size: 1.25rem;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+            }
+            .modal-close:hover {
+                color: var(--ink);
+                border-color: var(--ink-soft);
+                background: rgba(28, 26, 23, 0.04);
             }
             .modal h2 {
                 font-size: 1.15rem;
@@ -1051,7 +1083,10 @@
         <!-- Product form modal -->
         <div id="formModal" class="modal-overlay" hidden>
             <div class="modal">
-                <h2 id="formTitle">Add product</h2>
+                <div class="modal-header">
+                    <h2 id="formTitle">Add product</h2>
+                    <button type="button" class="modal-close" id="closeFormBtn" title="Close" aria-label="Close">×</button>
+                </div>
                 <label>
                     Product name
                     <input id="fName" type="text" placeholder="e.g. Tarpaulin 3x5 ft" autocomplete="off" />
@@ -1125,7 +1160,10 @@
         <!-- Order form modal -->
         <div id="orderModal" class="modal-overlay" hidden>
             <div class="modal wide">
-                <h2 id="orderFormTitle">Add order</h2>
+                <div class="modal-header">
+                    <h2 id="orderFormTitle">Add order</h2>
+                    <button type="button" class="modal-close" id="closeOrderBtn" title="Close" aria-label="Close">×</button>
+                </div>
                 <label>
                     Platform
                     <select id="oPlatform">
@@ -1209,7 +1247,10 @@
         <!-- Settings modal -->
         <div id="settingsModal" class="modal-overlay" hidden>
             <div class="modal">
-                <h2>Settings</h2>
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button type="button" class="modal-close" id="closeSettingsX" title="Close" aria-label="Close">×</button>
+                </div>
                 <label>
                     Shop / business name
                     <input id="setShopName" type="text" />
@@ -1872,12 +1913,11 @@
 
                 document.getElementById("addProductBtn").addEventListener("click", () => openForm(null));
                 document.getElementById("cancelForm").addEventListener("click", closeForm);
+                document.getElementById("closeFormBtn").addEventListener("click", closeForm);
                 document.getElementById("addCostLine").addEventListener("click", () => addCostLineRow("", ""));
                 document.getElementById("fPrice").addEventListener("input", updatePreview);
                 document.getElementById("fName").addEventListener("input", checkNameMatch);
-                formModal.addEventListener("click", (e) => {
-                    if (e.target === formModal) closeForm();
-                });
+                // Do not close on overlay click — preserves typed data
 
                 document.getElementById("quickUpdateBtn").addEventListener("click", () => {
                     if (!state.matchedProductId) return;
@@ -2129,6 +2169,7 @@
 
                 document.getElementById("addOrderBtn").addEventListener("click", () => openOrderForm(null));
                 document.getElementById("cancelOrder").addEventListener("click", closeOrderForm);
+                document.getElementById("closeOrderBtn").addEventListener("click", closeOrderForm);
                 document.getElementById("addOrderItem").addEventListener("click", () => {
                     addOrderItemRow({});
                     updateOrderPreview();
@@ -2140,9 +2181,7 @@
                     document.getElementById("oSubtotal").dataset.touched = "1";
                     updateOrderPreview();
                 });
-                orderModal.addEventListener("click", (e) => {
-                    if (e.target === orderModal) closeOrderForm();
-                });
+                // Do not close on overlay click — preserves typed data
 
                 document.getElementById("saveOrder").addEventListener("click", async () => {
                     const items = readOrderItems();
@@ -2219,8 +2258,9 @@
                     document.getElementById("setDefaultMargin").value = state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
                     settingsModal.hidden = false;
                 });
-                settingsModal.addEventListener("click", (e) => {
-                    if (e.target === settingsModal) settingsModal.hidden = true;
+                // Do not close on overlay click — preserves typed settings
+                document.getElementById("closeSettingsX").addEventListener("click", () => {
+                    settingsModal.hidden = true;
                 });
 
                 document.getElementById("closeSettings").addEventListener("click", async () => {
