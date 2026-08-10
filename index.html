@@ -397,11 +397,13 @@
                 border-radius: 3px;
             }
             body.privacy-on .priv-value.amt:not(.peek),
-            body.privacy-on .priv-value.pct:not(.peek) {
+            body.privacy-on .priv-value.pct:not(.peek),
+            body.privacy-on .priv-value.txt:not(.peek) {
                 color: transparent !important;
             }
             body.privacy-on .priv-value.amt:not(.peek)::before,
-            body.privacy-on .priv-value.pct:not(.peek)::before {
+            body.privacy-on .priv-value.pct:not(.peek)::before,
+            body.privacy-on .priv-value.txt:not(.peek)::before {
                 content: "";
                 position: absolute;
                 inset: -1px -2px;
@@ -409,6 +411,14 @@
                 background-image: radial-gradient(circle, var(--ink) 1.1px, transparent 1.3px);
                 background-size: 6px 6px;
                 opacity: 0.55;
+            }
+            /* Shop name under brand title */
+            #shopNameLabel.priv-value {
+                display: inline-block;
+                min-width: 4em;
+            }
+            body.privacy-on .tag.platform.priv-value.txt:not(.peek) {
+                background: rgba(28, 26, 23, 0.08);
             }
             .value.price-visible {
                 cursor: default;
@@ -1083,7 +1093,7 @@
                 </svg>
                 <div>
                     <h1>Costing</h1>
-                    <p id="shopNameLabel">Documenting</p>
+                    <p id="shopNameLabel" class="priv-value txt">Documenting</p>
                 </div>
             </div>
             <div class="tabs">
@@ -1848,7 +1858,7 @@
           <div class="card-title">
             <h3>${escapeHtml(order.ref || "Order #" + order.id)}</h3>
             <div class="meta">
-              <span class="tag platform">${escapeHtml(order.platform || "Other")}</span>
+              <span class="tag platform priv-value txt">${escapeHtml(order.platform || "Other")}</span>
               <span>${fmtDate(order.date)}</span>
               ${order.notes ? `<span>${escapeHtml(order.notes)}</span>` : ""}
             </div>
