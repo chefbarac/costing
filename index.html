@@ -2066,6 +2066,57 @@
                     updatePreview();
                 });
 
+                async function syncOrdersAfterProductRename(productId, oldName, newName) {
+                    const oldKey = (oldName || "").toLowerCase();
+                    const newKey = (newName || "").toLowerCase();
+                    if (!productId || oldKey === newKey) return { lines: 0, orders: 0 };
+
+                    let lines = 0;
+                    const touchedOrders = [];
+
+                    for (const order of state.orders) {
+                        let changed = false;
+                        (order.items || []).forEach((it) => {
+                            const linkedById = it.productId === productId;
+                            const linkedByName = !it.productId && (it.name || "").toLowerCase() === oldKey;
+                            if (linkedById || linkedByName) {
+                                it.name = newName;
+                                if (linkedById || linkedByName) it.productId = productId;
+                                lines++;
+                                changed = true;
+                            }
+                        });
+                        if (changed) touchedOrders.push(order);
+                    }
+
+                    for (const order of touchedOrders) {
+                        order.updatedAt = Date.now();
+                        await dbPut("orders", order);
+                    }
+
+                    return { lines, orders: touchedOrders.length };
+                }
+
+                function countOrderLinksForProduct(productId, productName) {
+                    const key = (productName || "").toLowerCase();
+                    let lines = 0;
+                    let orders = 0;
+                    state.orders.forEach((order) => {
+                        let hit = false;
+                        (order.items || []).forEach((it) => {
+                            if (it.productId === productId) {
+                                lines++;
+                                hit = true;
+                            } else if (!it.productId && key && (it.name || "").toLowerCase() === key) {
+                                lines++;
+                                hit = true;
+                            }
+                        });
+                        if (hit) orders++;
+                    });
+                    return { lines, orders };
+                }
+
                 document.getElementById("saveForm").addEventListener("click", async () => {
                     const name = document.getElementById("fName").value.trim();
                     if (!name) {
@@ -2079,6 +2130,13 @@
                         if (confirm(`A product named “${name}” already exists. Update it instead of creating a new one?`)) {
                             editingId = state.matchedProductId;
                         }
+                    }
+
+                    // Block accidental duplicate names when creating/editing
+                    const nameClash = state.products.find((p) => (p.name || "").toLowerCase() === name.toLowerCase() && p.id !== editingId);
+                    if (nameClash) {
+                        alert(`Another product is already named “${nameClash.name}”. Use a unique name, or open that product to edit it.`);
+                        return;
                     }
 
                     const costItems = readCostLines();
@@ -2097,6 +2155,8 @@
                         updatedAt: Date.now(),
                     };
 
+                    let renameSync = null;
+
                     if (editingId) {
                         product.id = editingId;
                         const existing = state.products.find((p) => p.id === editingId);
@@ -2104,6 +2164,24 @@
                         product.priceHistory = existing && existing.priceHistory ? [...existing.priceHistory] : [];
                         const oldPrice = existing ? Number(existing.sellingPrice) : null;
                         recordPriceHistory(product, oldPrice, newPrice, oldPrice !== newPrice ? "Price/cost update" : "Edit");
+
+                        const oldName = existing ? existing.name : "";
+                        const isRename = oldName && oldName.toLowerCase() !== name.toLowerCase();
+                        if (isRename) {
+                            const links = countOrderLinksForProduct(editingId, oldName);
+                            if (links.lines > 0) {
+                                const ok = confirm(
+                                    `Rename “${oldName}” → “${name}”?\n\n` +
+                                        `This product is linked in ${links.lines} order line(s) across ${links.orders} order(s).\n` +
+                                        `Those order line names will be updated to keep data in sync.`,
+                                );
+                                if (!ok) return;
+                                renameSync = { oldName, newName: name, productId: editingId };
+                            } else {
+                                const ok = confirm(`Rename “${oldName}” → “${name}”?\n\nNo linked order lines found. Continue?`);
+                                if (!ok) return;
+                            }
+                        }
                     } else {
                         product.createdAt = Date.now();
                         product.priceHistory = [];
@@ -2116,6 +2194,15 @@
                     const idx = state.products.findIndex((p) => p.id === product.id);
                     if (idx >= 0) state.products[idx] = product;
                     else state.products.push(product);
+
+                    if (renameSync) {
+                        const result = await syncOrdersAfterProductRename(renameSync.productId, renameSync.oldName, renameSync.newName);
+                        if (result.lines > 0) {
+                            alert(`Product renamed.\nSynced ${result.lines} order line(s) in ${result.orders} order(s).`);
+                            renderOrders(document.getElementById("searchInput").value);
+                            renderOrderSummary();
+                        }
+                    }
 
                     closeForm();
                     renderList(document.getElementById("searchInput").value);
