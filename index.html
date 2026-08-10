@@ -684,44 +684,93 @@
                 color: var(--ink-soft);
                 margin-bottom: 8px;
             }
+            .suggest-report .sr-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
             .suggest-report table {
                 width: 100%;
+                min-width: 640px;
                 border-collapse: collapse;
-                font-size: 0.82rem;
+                font-size: 0.78rem;
             }
             .suggest-report th {
-                text-align: left;
+                text-align: right;
                 font-weight: 600;
                 color: var(--ink-soft);
-                font-size: 0.68rem;
+                font-size: 0.62rem;
                 text-transform: uppercase;
                 letter-spacing: 0.03em;
-                padding: 4px 6px 6px 0;
+                padding: 4px 6px 6px;
                 border-bottom: 1px solid var(--line);
+                white-space: nowrap;
+            }
+            .suggest-report th:first-child,
+            .suggest-report td:first-child {
+                text-align: left;
+                padding-left: 0;
             }
             .suggest-report td {
-                padding: 6px 6px 6px 0;
+                padding: 7px 6px;
                 border-bottom: 1px solid rgba(214, 205, 184, 0.45);
                 vertical-align: top;
-            }
-            .suggest-report td:last-child,
-            .suggest-report th:last-child {
                 text-align: right;
-                padding-right: 0;
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.78rem;
+                white-space: nowrap;
+            }
+            .suggest-report td:first-child {
+                font-family: "Inter", sans-serif;
+                white-space: normal;
             }
             .suggest-report .sr-suggest {
-                font-family: "IBM Plex Mono", monospace;
                 font-weight: 600;
                 color: var(--good);
             }
-            .suggest-report .sr-unit {
-                font-family: "IBM Plex Mono", monospace;
-                font-size: 0.8rem;
+            .suggest-report .sr-suggest-net {
+                font-weight: 600;
+                color: var(--ink-soft);
             }
             .suggest-report .empty-hint {
                 font-size: 0.8rem;
                 color: var(--ink-soft);
                 margin: 0;
+            }
+            .breakdown-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.78rem;
+                margin-top: 8px;
+            }
+            .breakdown-table th {
+                text-align: right;
+                font-weight: 600;
+                color: var(--ink-soft);
+                font-size: 0.62rem;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+                padding: 4px 6px 6px;
+                border-bottom: 1px solid var(--line);
+                white-space: nowrap;
+            }
+            .breakdown-table th:first-child,
+            .breakdown-table td:first-child {
+                text-align: left;
+                padding-left: 0;
+            }
+            .breakdown-table td {
+                padding: 6px;
+                border-bottom: 1px solid rgba(214, 205, 184, 0.45);
+                text-align: right;
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.78rem;
+            }
+            .breakdown-table td:first-child {
+                font-family: "Inter", sans-serif;
+            }
+            .breakdown-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .order-target-row {
                 display: grid;
@@ -1226,14 +1275,14 @@
                 </div>
 
                 <div class="live-calc cols-3">
-                    <div><span class="label">Gross</span><span class="value priv-value amt" id="oPrevGross">—</span></div>
-                    <div><span class="label">After voucher</span><span class="value priv-value amt" id="oPrevAfterV">—</span></div>
-                    <div><span class="label">Net cost paid</span><span class="value priv-value amt" id="oPrevNet">—</span></div>
+                    <div><span class="label">Gross cost</span><span class="value priv-value amt" id="oPrevGross">—</span></div>
+                    <div><span class="label">Net cost</span><span class="value priv-value amt" id="oPrevNet">—</span></div>
+                    <div><span class="label">Savings</span><span class="value priv-value amt" id="oPrevSavings">—</span></div>
                 </div>
 
                 <div class="suggest-report" id="suggestReport">
-                    <h3>Suggested selling prices</h3>
-                    <p class="empty-hint" id="suggestReportEmpty">Add line items and a target margin or markup to see suggested unit prices.</p>
+                    <h3>Cost breakdown &amp; suggested selling prices</h3>
+                    <p class="empty-hint" id="suggestReportEmpty">Add line items to see gross vs net cost breakdown and suggested prices.</p>
                     <div id="suggestReportBody" hidden></div>
                 </div>
 
@@ -1390,29 +1439,52 @@
 
                 function computeOrderTotals(order) {
                     const items = order.items || [];
-                    // amount = total paid for the line qty (not unit price)
+                    // amount = total paid for the line qty (goods only, before voucher/shipping)
                     const itemsSum = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
                     const subtotal = Number(order.subtotal) || itemsSum;
                     const voucher = Number(order.voucher) || 0;
                     const shipFee = Number(order.shipFee) || 0;
                     const shipDiscount = Number(order.shipDiscount) || 0;
                     const afterVoucher = Math.max(0, subtotal - voucher);
-                    // Net cost you actually paid (subtotal − voucher + shipping − ship discount)
-                    const netCost = Math.max(0, afterVoucher + shipFee - shipDiscount);
-                    // Allocate net cost across lines proportional to their amount share
+                    const netShip = Math.max(0, shipFee - shipDiscount);
+                    // Gross = goods + full shipping (no discounts). Net = after voucher + net shipping.
+                    const grossCost = subtotal + shipFee;
+                    const netCost = Math.max(0, afterVoucher + netShip);
+
+                    // Allocate by each line's share of goods amount paid
                     const lineDetails = items.map((it) => {
                         const qty = Number(it.qty) || 0;
                         const amount = Number(it.amount) || 0;
                         const share = itemsSum > 0 ? amount / itemsSum : items.length ? 1 / items.length : 0;
-                        const allocated = netCost * share;
-                        const unitCost = qty > 0 ? allocated / qty : 0;
+
+                        // Gross: full goods amount + share of full shipping fee
+                        const grossGoods = amount;
+                        const grossShipShare = shipFee * share;
+                        const grossTotal = grossGoods + grossShipShare;
+                        const unitCostGross = qty > 0 ? grossTotal / qty : 0;
+
+                        // Net: goods after voucher + share of net shipping (fee − discount)
+                        const netGoods = afterVoucher * share;
+                        const netShipShare = netShip * share;
+                        const netTotal = netGoods + netShipShare;
+                        const unitCostNet = qty > 0 ? netTotal / qty : 0;
+
                         return {
                             name: it.name || "Item",
                             productId: it.productId || null,
                             qty,
                             amount,
-                            allocated,
-                            unitCost,
+                            share,
+                            grossGoods,
+                            grossShipShare,
+                            grossTotal,
+                            unitCostGross,
+                            netGoods,
+                            netShipShare,
+                            netTotal,
+                            unitCostNet,
+                            allocated: netTotal,
+                            unitCost: unitCostGross, // default to gross (user preference)
                         };
                     });
                     return {
@@ -1421,8 +1493,10 @@
                         shipFee,
                         shipDiscount,
                         afterVoucher,
+                        netShip,
                         netCost,
-                        netReceived: netCost, // alias for older UI labels
+                        grossCost,
+                        netReceived: netCost,
                         estCost: netCost,
                         estProfit: 0,
                         itemsSum,
@@ -1765,9 +1839,9 @@
             <div class="order-net" style="margin-top:4px;font-size:0.78rem;color:var(--ink-soft)">${escapeHtml(itemSummary)}</div>
           </div>
           <div class="card-figures order-figs">
-            <div class="figure"><span class="label">Gross</span><span class="value priv-value amt">${fmtMoney(t.subtotal)}</span></div>
-            <div class="figure"><span class="label">After voucher</span><span class="value priv-value amt">${fmtMoney(t.afterVoucher)}</span></div>
+            <div class="figure"><span class="label">Gross cost</span><span class="value priv-value amt">${fmtMoney(t.grossCost)}</span></div>
             <div class="figure"><span class="label">Net cost</span><span class="value priv-value amt">${fmtMoney(t.netCost)}</span></div>
+            <div class="figure"><span class="label">Savings</span><span class="value priv-value amt profit-pos">${fmtMoney(Math.max(0, t.grossCost - t.netCost))}</span></div>
             <div class="figure"><span class="label">Lines</span><span class="value">${(order.items || []).length}</span></div>
           </div>
           <div class="card-actions">
@@ -1778,24 +1852,51 @@
         </div>
         <div class="card-details" hidden>
           <ul class="cost-breakdown">
-            <li><span>Subtotal (before discounts)</span><span class="priv-value amt">${fmtMoney(t.subtotal)}</span></li>
+            <li><span>Goods subtotal (gross)</span><span class="priv-value amt">${fmtMoney(t.subtotal)}</span></li>
             <li><span>Voucher / coupon</span><span class="priv-value amt">−${fmtMoney(t.voucher)}</span></li>
-            <li><span>Shipping fee paid</span><span class="priv-value amt">${fmtMoney(t.shipFee)}</span></li>
+            <li><span>Goods after voucher</span><span class="priv-value amt">${fmtMoney(t.afterVoucher)}</span></li>
+            <li><span>Shipping fee (gross)</span><span class="priv-value amt">${fmtMoney(t.shipFee)}</span></li>
             <li><span>Shipping discount</span><span class="priv-value amt">−${fmtMoney(t.shipDiscount)}</span></li>
-            <li><span><strong>Net cost paid</strong></span><span class="priv-value amt"><strong>${fmtMoney(t.netCost)}</strong></span></li>
+            <li><span>Net shipping</span><span class="priv-value amt">${fmtMoney(t.netShip)}</span></li>
+            <li><span><strong>Gross cost</strong> (goods + full ship)</span><span class="priv-value amt"><strong>${fmtMoney(t.grossCost)}</strong></span></li>
+            <li><span><strong>Net cost</strong> (after discounts)</span><span class="priv-value amt"><strong>${fmtMoney(t.netCost)}</strong></span></li>
           </ul>
           ${
               (t.lineDetails || []).length
-                  ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Items &amp; unit cost</h4>
-            <ul class="cost-breakdown">
-              ${t.lineDetails
-                  .map((it) => {
-                      const suggested = suggestPriceFromCost(it.unitCost, tm, tk);
-                      const sugTxt = suggested != null && isFinite(suggested) ? ` → suggest ${fmtMoney(Math.ceil(suggested * 100) / 100)}` : "";
-                      return `<li><span>${it.qty || 1} × ${escapeHtml(it.name)} <span style="color:var(--ink-soft)">(paid ${fmtMoney(it.amount)})</span></span><span class="priv-value amt">${fmtMoney(it.unitCost)}/u${sugTxt}</span></li>`;
-                  })
-                  .join("")}
-            </ul>`
+                  ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Per-item breakdown</h4>
+            <div class="breakdown-scroll">
+              <table class="breakdown-table" style="min-width:640px">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Gross goods</th>
+                    <th>Gross ship</th>
+                    <th>Net goods</th>
+                    <th>Net ship</th>
+                    <th>Suggest (gross)</th>
+                    <th>Suggest (net)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${t.lineDetails
+                      .map((it) => {
+                          const hasT = (tm != null && tm !== "" && isFinite(Number(tm))) || (tk != null && tk !== "" && isFinite(Number(tk)));
+                          const sugG = hasT ? fmtSuggest(it.unitCostGross, tm, tk) : "—";
+                          const sugN = hasT ? fmtSuggest(it.unitCostNet, tm, tk) : "—";
+                          return `<tr>
+                    <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
+                    <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
+                    <td class="priv-value amt">${fmtMoney(it.grossShipShare)}</td>
+                    <td class="priv-value amt">${fmtMoney(it.netGoods)}</td>
+                    <td class="priv-value amt">${fmtMoney(it.netShipShare)}</td>
+                    <td style="color:var(--good);font-weight:600">${sugG}</td>
+                    <td style="color:var(--ink-soft);font-weight:600">${sugN}</td>
+                  </tr>`;
+                      })
+                      .join("")}
+                </tbody>
+              </table>
+            </div>`
                   : ""
           }
         </div>
@@ -2057,6 +2158,12 @@
                         .filter((it) => it.name || it.qty || it.amount);
                 }
 
+                function fmtSuggest(cost, targetMargin, targetMarkup) {
+                    const suggested = suggestPriceFromCost(cost, targetMargin, targetMarkup);
+                    if (suggested == null || !isFinite(suggested)) return "—";
+                    return fmtMoney(Math.ceil(suggested * 100) / 100);
+                }
+
                 function renderSuggestReport(t, targetMargin, targetMarkup) {
                     const emptyEl = document.getElementById("suggestReportEmpty");
                     const bodyEl = document.getElementById("suggestReportBody");
@@ -2064,11 +2171,9 @@
                     const hasTarget =
                         (targetMargin != null && targetMargin !== "" && isFinite(Number(targetMargin))) || (targetMarkup != null && targetMarkup !== "" && isFinite(Number(targetMarkup)));
 
-                    if (!lines.length || !hasTarget) {
+                    if (!lines.length) {
                         emptyEl.hidden = false;
-                        emptyEl.textContent = !lines.length
-                            ? "Add line items and a target margin or markup to see suggested unit prices."
-                            : "Enter a target margin % or markup % above to generate suggested selling prices.";
+                        emptyEl.textContent = "Add line items to see gross vs net cost breakdown and suggested prices.";
                         bodyEl.hidden = true;
                         bodyEl.innerHTML = "";
                         return;
@@ -2079,30 +2184,48 @@
 
                     const rows = lines
                         .map((it) => {
-                            const suggested = suggestPriceFromCost(it.unitCost, targetMargin, targetMarkup);
-                            const sug = suggested != null && isFinite(suggested) ? fmtMoney(Math.ceil(suggested * 100) / 100) : "—";
+                            const sugGross = hasTarget ? fmtSuggest(it.unitCostGross, targetMargin, targetMarkup) : "—";
+                            const sugNet = hasTarget ? fmtSuggest(it.unitCostNet, targetMargin, targetMarkup) : "—";
                             return `<tr>
-              <td>${escapeHtml(it.name)}<br><span style="font-size:0.72rem;color:var(--ink-soft)">${it.qty || 0} pcs · paid ${fmtMoney(it.amount)}</span></td>
-              <td class="sr-unit priv-value amt">${fmtMoney(it.unitCost)}</td>
-              <td class="sr-suggest">${sug}</td>
+              <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
+              <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
+              <td class="priv-value amt">${fmtMoney(it.grossShipShare)}</td>
+              <td class="priv-value amt">${fmtMoney(it.netGoods)}</td>
+              <td class="priv-value amt">${fmtMoney(it.netShipShare)}</td>
+              <td class="sr-suggest">${sugGross}</td>
+              <td class="sr-suggest-net">${sugNet}</td>
             </tr>`;
                         })
                         .join("");
 
+                    const targetNote = !hasTarget
+                        ? "Enter a target margin % or markup % above to fill suggested prices."
+                        : targetMargin != null && targetMargin !== ""
+                          ? `Suggested prices use margin ${Number(targetMargin).toFixed(1)}%. Gross column is the one you’ll typically use.`
+                          : `Suggested prices use markup ${Number(targetMarkup).toFixed(1)}%. Gross column is the one you’ll typically use.`;
+
                     bodyEl.innerHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Unit cost</th>
-                <th>Suggest sell</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
+          <div class="sr-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Gross goods</th>
+                  <th>Gross ship share</th>
+                  <th>Net goods</th>
+                  <th>Net ship share</th>
+                  <th>Suggest (gross)</th>
+                  <th>Suggest (net)</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
           <p style="font-size:0.72rem;color:var(--ink-soft);margin:8px 0 0">
-            Unit cost allocates net order cost (after voucher &amp; shipping) by each line’s share of amount paid.
-            ${targetMargin != null && targetMargin !== "" ? `Using margin ${Number(targetMargin).toFixed(1)}%.` : `Using markup ${Number(targetMarkup).toFixed(1)}%.`}
+            Gross goods = amount paid for the item. Gross ship share = share of full shipping fee.
+            Net goods = share of (subtotal − voucher). Net ship share = share of (shipping − ship discount).
+            Shares are proportional to each line’s amount paid.
+            ${targetNote}
           </p>`;
                     bodyEl.querySelectorAll(".priv-value").forEach(bindPeek);
                 }
@@ -2122,9 +2245,9 @@
                         shipDiscount: parseFloat(document.getElementById("oShipDiscount").value) || 0,
                     };
                     const t = computeOrderTotals(draft);
-                    document.getElementById("oPrevGross").textContent = fmtMoney(t.subtotal);
-                    document.getElementById("oPrevAfterV").textContent = fmtMoney(t.afterVoucher);
+                    document.getElementById("oPrevGross").textContent = fmtMoney(t.grossCost);
                     document.getElementById("oPrevNet").textContent = fmtMoney(t.netCost);
+                    document.getElementById("oPrevSavings").textContent = fmtMoney(Math.max(0, t.grossCost - t.netCost));
 
                     const tm = document.getElementById("oTargetMargin").value;
                     const tk = document.getElementById("oTargetMarkup").value;
