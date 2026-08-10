@@ -1346,6 +1346,10 @@
                         Shipping discount / subsidy
                         <input id="oShipDiscount" type="number" step="0.01" min="0" placeholder="0.00" />
                     </label>
+                    <label>
+                        Rider tip
+                        <input id="oRiderTip" type="number" step="0.01" min="0" placeholder="0.00" />
+                    </label>
                 </div>
 
                 <div class="order-target-row">
@@ -1531,11 +1535,12 @@
                     const voucher = Number(order.voucher) || 0;
                     const shipFee = Number(order.shipFee) || 0;
                     const shipDiscount = Number(order.shipDiscount) || 0;
+                    const riderTip = Number(order.riderTip) || 0;
                     const afterVoucher = Math.max(0, subtotal - voucher);
                     const netShip = Math.max(0, shipFee - shipDiscount);
-                    // Gross = goods + full shipping (no discounts). Net = after voucher + net shipping.
-                    const grossCost = subtotal + shipFee;
-                    const netCost = Math.max(0, afterVoucher + netShip);
+                    // Gross = goods + full shipping + tip (no discounts). Net = after voucher + net shipping + tip.
+                    const grossCost = subtotal + shipFee + riderTip;
+                    const netCost = Math.max(0, afterVoucher + netShip + riderTip);
 
                     // Allocate by each line's share of goods amount paid
                     const lineDetails = items.map((it) => {
@@ -1543,16 +1548,17 @@
                         const amount = Number(it.amount) || 0;
                         const share = itemsSum > 0 ? amount / itemsSum : items.length ? 1 / items.length : 0;
 
-                        // Gross: full goods amount + share of full shipping fee
+                        // Gross: full goods amount + share of full shipping fee + share of tip
                         const grossGoods = amount;
                         const grossShipShare = shipFee * share;
-                        const grossTotal = grossGoods + grossShipShare;
+                        const tipShare = riderTip * share;
+                        const grossTotal = grossGoods + grossShipShare + tipShare;
                         const unitCostGross = qty > 0 ? grossTotal / qty : 0;
 
-                        // Net: goods after voucher + share of net shipping (fee − discount)
+                        // Net: goods after voucher + share of net shipping (fee − discount) + share of tip
                         const netGoods = afterVoucher * share;
                         const netShipShare = netShip * share;
-                        const netTotal = netGoods + netShipShare;
+                        const netTotal = netGoods + netShipShare + tipShare;
                         const unitCostNet = qty > 0 ? netTotal / qty : 0;
 
                         return {
@@ -1563,6 +1569,7 @@
                             share,
                             grossGoods,
                             grossShipShare,
+                            tipShare,
                             grossTotal,
                             unitCostGross,
                             netGoods,
@@ -1578,6 +1585,7 @@
                         voucher,
                         shipFee,
                         shipDiscount,
+                        riderTip,
                         afterVoucher,
                         netShip,
                         netCost,
@@ -2175,19 +2183,21 @@
             <li><span>Shipping fee (gross)</span><span class="priv-value amt">${fmtMoney(t.shipFee)}</span></li>
             <li><span>Shipping discount</span><span class="priv-value amt">−${fmtMoney(t.shipDiscount)}</span></li>
             <li><span>Net shipping</span><span class="priv-value amt">${fmtMoney(t.netShip)}</span></li>
-            <li><span><strong>Gross cost</strong> (goods + full ship)</span><span class="priv-value amt"><strong>${fmtMoney(t.grossCost)}</strong></span></li>
-            <li><span><strong>Net cost</strong> (after discounts)</span><span class="priv-value amt"><strong>${fmtMoney(t.netCost)}</strong></span></li>
+            <li><span>Rider tip</span><span class="priv-value amt">${fmtMoney(t.riderTip)}</span></li>
+            <li><span><strong>Gross cost</strong> (goods + full ship + tip)</span><span class="priv-value amt"><strong>${fmtMoney(t.grossCost)}</strong></span></li>
+            <li><span><strong>Net cost</strong> (after discounts + tip)</span><span class="priv-value amt"><strong>${fmtMoney(t.netCost)}</strong></span></li>
           </ul>
           ${
               (t.lineDetails || []).length
                   ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Per-item breakdown</h4>
             <div class="breakdown-scroll">
-              <table class="breakdown-table" style="min-width:820px">
+              <table class="breakdown-table" style="min-width:920px">
                 <thead>
                   <tr>
                     <th>Item</th>
                     <th>Gross goods</th>
                     <th>Gross ship</th>
+                    <th>Tip share</th>
                     <th>Net goods</th>
                     <th>Net ship</th>
                     <th>Per pc (gross)</th>
@@ -2206,6 +2216,7 @@
                     <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
                     <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
                     <td class="priv-value amt">${fmtMoney(it.grossShipShare)}</td>
+                    <td class="priv-value amt">${fmtMoney(it.tipShare || 0)}</td>
                     <td class="priv-value amt">${fmtMoney(it.netGoods)}</td>
                     <td class="priv-value amt">${fmtMoney(it.netShipShare)}</td>
                     <td class="priv-value amt">${fmtMoney(it.unitCostGross)}</td>
@@ -2606,6 +2617,7 @@
               <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
               <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
               <td class="priv-value amt">${fmtMoney(it.grossShipShare)}</td>
+              <td class="priv-value amt">${fmtMoney(it.tipShare || 0)}</td>
               <td class="priv-value amt">${fmtMoney(it.netGoods)}</td>
               <td class="priv-value amt">${fmtMoney(it.netShipShare)}</td>
               <td class="priv-value amt">${fmtMoney(it.unitCostGross)}</td>
@@ -2624,12 +2636,13 @@
 
                     bodyEl.innerHTML = `
           <div class="sr-scroll">
-            <table style="min-width:820px">
+            <table style="min-width:920px">
               <thead>
                 <tr>
                   <th>Item</th>
                   <th>Gross goods</th>
                   <th>Gross ship share</th>
+                  <th>Tip share</th>
                   <th>Net goods</th>
                   <th>Net ship share</th>
                   <th>Per pc (gross)</th>
@@ -2642,9 +2655,9 @@
             </table>
           </div>
           <p style="font-size:0.72rem;color:var(--ink-soft);margin:8px 0 0">
-            Gross goods = amount paid for the item. Gross ship share = share of full shipping fee.
+            Gross goods = amount paid for the item. Gross ship share = share of full shipping fee. Tip share = share of rider tip.
             Net goods = share of (subtotal − voucher). Net ship share = share of (shipping − ship discount).
-            Per pc (gross) = (gross goods + gross ship) ÷ qty. Per pc (net) = (net goods + net ship) ÷ qty.
+            Per pc (gross) = (gross goods + gross ship + tip) ÷ qty. Per pc (net) = (net goods + net ship + tip) ÷ qty.
             Shares are proportional to each line’s amount paid.
             ${targetNote}
           </p>`;
@@ -2663,6 +2676,7 @@
                         voucher: parseFloat(document.getElementById("oVoucher").value) || 0,
                         shipFee: parseFloat(document.getElementById("oShipFee").value) || 0,
                         shipDiscount: parseFloat(document.getElementById("oShipDiscount").value) || 0,
+                        riderTip: parseFloat(document.getElementById("oRiderTip").value) || 0,
                     };
                     const t = computeOrderTotals(draft);
                     document.getElementById("oPrevGross").textContent = fmtMoney(t.grossCost);
@@ -2689,6 +2703,7 @@
                     document.getElementById("oVoucher").value = order && order.voucher != null ? order.voucher : "";
                     document.getElementById("oShipFee").value = order && order.shipFee != null ? order.shipFee : "";
                     document.getElementById("oShipDiscount").value = order && order.shipDiscount != null ? order.shipDiscount : "";
+                    document.getElementById("oRiderTip").value = order && order.riderTip != null ? order.riderTip : "";
                     document.getElementById("oTargetMargin").value =
                         order && order.targetMargin != null ? order.targetMargin : state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
                     document.getElementById("oTargetMarkup").value = order && order.targetMarkup != null ? order.targetMarkup : "";
@@ -2717,7 +2732,7 @@
                     addOrderItemRow({});
                     updateOrderPreview();
                 });
-                ["oVoucher", "oShipFee", "oShipDiscount", "oTargetMargin", "oTargetMarkup"].forEach((id) => {
+                ["oVoucher", "oShipFee", "oShipDiscount", "oRiderTip", "oTargetMargin", "oTargetMarkup"].forEach((id) => {
                     document.getElementById(id).addEventListener("input", updateOrderPreview);
                 });
                 // Do not close on overlay click — preserves typed data
@@ -2737,6 +2752,7 @@
                         voucher: parseFloat(document.getElementById("oVoucher").value) || 0,
                         shipFee: parseFloat(document.getElementById("oShipFee").value) || 0,
                         shipDiscount: parseFloat(document.getElementById("oShipDiscount").value) || 0,
+                        riderTip: parseFloat(document.getElementById("oRiderTip").value) || 0,
                         targetMargin: tmVal !== "" ? parseFloat(tmVal) : null,
                         targetMarkup: tkVal !== "" ? parseFloat(tkVal) : null,
                         updatedAt: Date.now(),
@@ -2843,7 +2859,7 @@
                 });
 
                 document.getElementById("exportOrdersCsv").addEventListener("click", () => {
-                    const rows = [["Platform", "Ref", "Date", "Items", "Subtotal", "Voucher", "Ship Fee", "Ship Discount", "Net Cost", "Target Margin %", "Target Markup %", "Notes"]];
+                    const rows = [["Platform", "Ref", "Date", "Items", "Subtotal", "Voucher", "Ship Fee", "Ship Discount", "Rider Tip", "Net Cost", "Target Margin %", "Target Markup %", "Notes"]];
                     state.orders.forEach((o) => {
                         const t = computeOrderTotals(o);
                         const itemsStr = (o.items || [])
@@ -2861,6 +2877,7 @@
                             t.voucher.toFixed(2),
                             t.shipFee.toFixed(2),
                             t.shipDiscount.toFixed(2),
+                            t.riderTip.toFixed(2),
                             t.netCost.toFixed(2),
                             o.targetMargin != null ? o.targetMargin : "",
                             o.targetMarkup != null ? o.targetMarkup : "",
