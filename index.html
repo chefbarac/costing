@@ -35,8 +35,14 @@
                 --shadow: 0 1px 2px rgba(28, 26, 23, 0.06), 0 6px 20px rgba(28, 26, 23, 0.06);
             }
 
-            * { box-sizing: border-box; }
-            html, body { margin: 0; padding: 0; }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
             body {
                 background: var(--paper);
                 background-image: radial-gradient(circle at 1px 1px, rgba(28, 26, 23, 0.05) 1px, transparent 1.4px);
@@ -47,15 +53,26 @@
                 padding-bottom: 64px;
             }
 
-            h1, h2, h3 {
+            h1,
+            h2,
+            h3 {
                 font-family: "Space Grotesk", sans-serif;
                 margin: 0;
                 letter-spacing: -0.01em;
             }
-            .mono { font-family: "IBM Plex Mono", monospace; }
+            .mono {
+                font-family: "IBM Plex Mono", monospace;
+            }
 
-            a, button, input, select { font-family: inherit; }
-            button { cursor: pointer; }
+            a,
+            button,
+            input,
+            select {
+                font-family: inherit;
+            }
+            button {
+                cursor: pointer;
+            }
             :focus-visible {
                 outline: 2px solid var(--key);
                 outline-offset: 2px;
@@ -69,12 +86,31 @@
                 pointer-events: none;
                 z-index: 1;
             }
-            .crop svg { width: 100%; height: 100%; }
-            .crop.tl { top: 14px; left: 14px; }
-            .crop.tr { top: 14px; right: 14px; }
-            .crop.bl { bottom: 14px; left: 14px; }
-            .crop.br { bottom: 14px; right: 14px; }
-            @media (max-width: 720px) { .crop { display: none; } }
+            .crop svg {
+                width: 100%;
+                height: 100%;
+            }
+            .crop.tl {
+                top: 14px;
+                left: 14px;
+            }
+            .crop.tr {
+                top: 14px;
+                right: 14px;
+            }
+            .crop.bl {
+                bottom: 14px;
+                left: 14px;
+            }
+            .crop.br {
+                bottom: 14px;
+                right: 14px;
+            }
+            @media (max-width: 720px) {
+                .crop {
+                    display: none;
+                }
+            }
 
             header.topbar {
                 position: sticky;
@@ -89,22 +125,58 @@
                 backdrop-filter: blur(6px);
                 border-bottom: 1px solid var(--line);
             }
-            .brand { display: flex; align-items: center; gap: 10px; }
-            .reg-mark { width: 30px; height: 30px; flex: 0 0 auto; }
-            .reg-mark circle { mix-blend-mode: multiply; transition: transform 0.35s ease; }
-            .reg-mark .c { fill: var(--cyan); }
-            .reg-mark .m { fill: var(--magenta); }
-            .reg-mark .y { fill: var(--yellow); }
-            .reg-mark .k { fill: var(--key); }
-            body.privacy-on .reg-mark .c { transform: translate(-2.4px, -1.4px); }
-            body.privacy-on .reg-mark .m { transform: translate(2.2px, -1.6px); }
-            body.privacy-on .reg-mark .y { transform: translate(0.4px, 2.4px); }
-            body.privacy-on .reg-mark .k { transform: translate(0, 0); }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .reg-mark {
+                width: 30px;
+                height: 30px;
+                flex: 0 0 auto;
+            }
+            .reg-mark circle {
+                mix-blend-mode: multiply;
+                transition: transform 0.35s ease;
+            }
+            .reg-mark .c {
+                fill: var(--cyan);
+            }
+            .reg-mark .m {
+                fill: var(--magenta);
+            }
+            .reg-mark .y {
+                fill: var(--yellow);
+            }
+            .reg-mark .k {
+                fill: var(--key);
+            }
+            body.privacy-on .reg-mark .c {
+                transform: translate(-2.4px, -1.4px);
+            }
+            body.privacy-on .reg-mark .m {
+                transform: translate(2.2px, -1.6px);
+            }
+            body.privacy-on .reg-mark .y {
+                transform: translate(0.4px, 2.4px);
+            }
+            body.privacy-on .reg-mark .k {
+                transform: translate(0, 0);
+            }
 
-            .brand h1 { font-size: 1.25rem; }
-            .brand p { margin: 0; font-size: 0.75rem; color: var(--ink-soft); }
+            .brand h1 {
+                font-size: 1.25rem;
+            }
+            .brand p {
+                margin: 0;
+                font-size: 0.75rem;
+                color: var(--ink-soft);
+            }
 
-            .topbar .search { flex: 1 1 180px; min-width: 140px; }
+            .topbar .search {
+                flex: 1 1 180px;
+                min-width: 140px;
+            }
             .topbar .search input {
                 width: 100%;
                 padding: 9px 12px;
@@ -115,7 +187,11 @@
                 color: var(--ink);
             }
 
-            .controls { display: flex; align-items: center; gap: 8px; }
+            .controls {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
             .privacy-btn {
                 display: flex;
                 align-items: center;
@@ -128,7 +204,10 @@
                 font-weight: 600;
                 color: var(--ink);
             }
-            .privacy-btn .reg-mark { width: 20px; height: 20px; }
+            .privacy-btn .reg-mark {
+                width: 20px;
+                height: 20px;
+            }
             .icon-btn {
                 width: 36px;
                 height: 36px;
@@ -183,7 +262,9 @@
                 font-weight: 600;
                 font-size: 0.9rem;
             }
-            .btn-primary:hover { background: #000; }
+            .btn-primary:hover {
+                background: #000;
+            }
             .btn-secondary {
                 background: transparent;
                 border: 1px solid var(--line);
@@ -226,13 +307,15 @@
                 letter-spacing: 0;
             }
 
-            .product-list, .order-list {
+            .product-list,
+            .order-list {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
 
-            .product-card, .order-card {
+            .product-card,
+            .order-card {
                 background: var(--card);
                 border: 1px solid var(--line);
                 border-radius: var(--radius);
@@ -252,7 +335,9 @@
                 min-width: 130px;
                 flex: 1 1 160px;
             }
-            .card-title h3 { font-size: 1rem; }
+            .card-title h3 {
+                font-size: 1rem;
+            }
             .card-title .meta {
                 font-size: 0.72rem;
                 color: var(--ink-soft);
@@ -296,9 +381,15 @@
                 font-size: 0.92rem;
                 font-weight: 600;
             }
-            .value.profit-pos { color: var(--good); }
-            .value.profit-neg { color: var(--bad); }
-            .value.margin-warn { color: var(--warn); }
+            .value.profit-pos {
+                color: var(--good);
+            }
+            .value.profit-neg {
+                color: var(--bad);
+            }
+            .value.margin-warn {
+                color: var(--warn);
+            }
 
             .priv-value {
                 position: relative;
@@ -319,7 +410,9 @@
                 background-size: 6px 6px;
                 opacity: 0.55;
             }
-            .value.price-visible { cursor: default; }
+            .value.price-visible {
+                cursor: default;
+            }
 
             .card-actions {
                 display: flex;
@@ -362,7 +455,9 @@
                 justify-content: space-between;
                 font-size: 0.85rem;
             }
-            .cost-breakdown li span:first-child { color: var(--ink-soft); }
+            .cost-breakdown li span:first-child {
+                color: var(--ink-soft);
+            }
 
             .history-section {
                 margin-top: 12px;
@@ -396,8 +491,13 @@
                 padding: 3px 0;
                 border-bottom: 1px solid rgba(214, 205, 184, 0.5);
             }
-            .history-list .h-date { color: var(--ink-soft); }
-            .history-list .h-note { color: var(--ink-soft); font-size: 0.75rem; }
+            .history-list .h-date {
+                color: var(--ink-soft);
+            }
+            .history-list .h-note {
+                color: var(--ink-soft);
+                font-size: 0.75rem;
+            }
 
             .empty-state {
                 text-align: center;
@@ -413,8 +513,12 @@
                 margin-top: 26px;
             }
 
-            .panel { display: none; }
-            .panel.active { display: block; }
+            .panel {
+                display: none;
+            }
+            .panel.active {
+                display: block;
+            }
 
             /* Modal */
             .modal-overlay {
@@ -428,7 +532,9 @@
                 z-index: 50;
                 overflow-y: auto;
             }
-            .modal-overlay[hidden] { display: none; }
+            .modal-overlay[hidden] {
+                display: none;
+            }
             .modal {
                 background: var(--card);
                 border-radius: 12px;
@@ -440,8 +546,13 @@
                 flex-direction: column;
                 gap: 12px;
             }
-            .modal.wide { max-width: 640px; }
-            .modal h2 { font-size: 1.15rem; margin-bottom: 4px; }
+            .modal.wide {
+                max-width: 640px;
+            }
+            .modal h2 {
+                font-size: 1.15rem;
+                margin-bottom: 4px;
+            }
             .modal label {
                 display: flex;
                 flex-direction: column;
@@ -462,7 +573,9 @@
                 color: var(--ink);
                 background: #fff;
             }
-            .modal input[type="checkbox"] { margin-right: 6px; }
+            .modal input[type="checkbox"] {
+                margin-right: 6px;
+            }
             .checkbox-row {
                 flex-direction: row !important;
                 align-items: center;
@@ -494,20 +607,31 @@
                 padding: 4px 9px;
                 font-size: 0.78rem;
             }
-            #costLines, #orderItems {
+            #costLines,
+            #orderItems {
                 display: flex;
                 flex-direction: column;
                 gap: 6px;
             }
-            .cost-line, .order-item-row {
+            .cost-line,
+            .order-item-row {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
                 align-items: center;
             }
-            .cost-line .cl-label, .order-item-row .oi-name { flex: 1 1 140px; }
-            .cost-line .cl-amount, .order-item-row .oi-qty, .order-item-row .oi-price { flex: 1 1 80px; }
-            .cost-line input, .order-item-row input, .order-item-row select {
+            .cost-line .cl-label,
+            .order-item-row .oi-name {
+                flex: 1 1 140px;
+            }
+            .cost-line .cl-amount,
+            .order-item-row .oi-qty,
+            .order-item-row .oi-amount {
+                flex: 1 1 80px;
+            }
+            .cost-line input,
+            .order-item-row input,
+            .order-item-row select {
                 padding: 7px 8px;
                 border: 1px solid var(--line);
                 border-radius: 6px;
@@ -515,7 +639,65 @@
                 background: #fff;
                 min-width: 0;
             }
-            .cl-remove, .oi-remove {
+            .suggest-report {
+                border: 1px solid var(--line);
+                border-radius: 9px;
+                padding: 10px 12px;
+                background: rgba(0, 174, 239, 0.06);
+            }
+            .suggest-report h3 {
+                font-size: 0.78rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--ink-soft);
+                margin-bottom: 8px;
+            }
+            .suggest-report table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 0.82rem;
+            }
+            .suggest-report th {
+                text-align: left;
+                font-weight: 600;
+                color: var(--ink-soft);
+                font-size: 0.68rem;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+                padding: 4px 6px 6px 0;
+                border-bottom: 1px solid var(--line);
+            }
+            .suggest-report td {
+                padding: 6px 6px 6px 0;
+                border-bottom: 1px solid rgba(214, 205, 184, 0.45);
+                vertical-align: top;
+            }
+            .suggest-report td:last-child,
+            .suggest-report th:last-child {
+                text-align: right;
+                padding-right: 0;
+            }
+            .suggest-report .sr-suggest {
+                font-family: "IBM Plex Mono", monospace;
+                font-weight: 600;
+                color: var(--good);
+            }
+            .suggest-report .sr-unit {
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.8rem;
+            }
+            .suggest-report .empty-hint {
+                font-size: 0.8rem;
+                color: var(--ink-soft);
+                margin: 0;
+            }
+            .order-target-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .cl-remove,
+            .oi-remove {
                 flex: 0 0 auto;
                 background: transparent;
                 border: none;
@@ -523,7 +705,10 @@
                 font-size: 1.1rem;
                 padding: 4px 8px;
             }
-            .cl-remove:hover, .oi-remove:hover { color: var(--bad); }
+            .cl-remove:hover,
+            .oi-remove:hover {
+                color: var(--bad);
+            }
 
             .live-calc {
                 display: grid;
@@ -533,8 +718,12 @@
                 padding: 10px;
                 border-radius: 8px;
             }
-            .live-calc.cols-3 { grid-template-columns: repeat(3, 1fr); }
-            .live-calc.cols-5 { grid-template-columns: repeat(5, 1fr); }
+            .live-calc.cols-3 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .live-calc.cols-5 {
+                grid-template-columns: repeat(5, 1fr);
+            }
             .live-calc div {
                 display: flex;
                 flex-direction: column;
@@ -567,7 +756,9 @@
                 font-weight: 600;
                 white-space: nowrap;
             }
-            .suggest-btn:hover { background: #0099d4; }
+            .suggest-btn:hover {
+                background: #0099d4;
+            }
             .suggest-hint {
                 font-size: 0.72rem;
                 color: var(--ink-soft);
@@ -598,7 +789,9 @@
                 gap: 10px;
                 flex-wrap: wrap;
             }
-            .match-banner.visible { display: flex; }
+            .match-banner.visible {
+                display: flex;
+            }
             .match-banner button {
                 background: var(--cyan);
                 color: #fff;
@@ -614,51 +807,142 @@
                 color: var(--ink-soft);
                 margin-top: 4px;
             }
-            .order-net b { color: var(--ink); font-family: "IBM Plex Mono", monospace; }
+            .order-net b {
+                color: var(--ink);
+                font-family: "IBM Plex Mono", monospace;
+            }
 
             @media (prefers-reduced-motion: reduce) {
-                * { transition: none !important; animation: none !important; }
+                * {
+                    transition: none !important;
+                    animation: none !important;
+                }
             }
 
             @media (max-width: 640px) {
-                main { padding: 14px; }
-                header.topbar { padding: 10px 14px; gap: 10px; }
-                .card-figures { grid-template-columns: repeat(2, minmax(70px, 1fr)); }
-                .card-figures.order-figs { grid-template-columns: repeat(2, minmax(70px, 1fr)); }
-                .card-actions { margin-left: 0; width: 100%; justify-content: flex-start; }
-                .stat-chips { margin-left: 0; width: 100%; }
-                .chip { flex: 1 1 calc(50% - 8px); min-width: 0; }
-                .modal { padding: 16px; border-radius: 10px; }
-                .live-calc { grid-template-columns: repeat(2, 1fr); }
-                .live-calc.cols-5 { grid-template-columns: repeat(2, 1fr); }
-                .target-row { grid-template-columns: 1fr 1fr; }
-                .target-row .suggest-btn { grid-column: 1 / -1; }
-                .tabs { order: 4; width: 100%; justify-content: center; }
+                main {
+                    padding: 14px;
+                }
+                header.topbar {
+                    padding: 10px 14px;
+                    gap: 10px;
+                }
+                .card-figures {
+                    grid-template-columns: repeat(2, minmax(70px, 1fr));
+                }
+                .card-figures.order-figs {
+                    grid-template-columns: repeat(2, minmax(70px, 1fr));
+                }
+                .card-actions {
+                    margin-left: 0;
+                    width: 100%;
+                    justify-content: flex-start;
+                }
+                .stat-chips {
+                    margin-left: 0;
+                    width: 100%;
+                }
+                .chip {
+                    flex: 1 1 calc(50% - 8px);
+                    min-width: 0;
+                }
+                .modal {
+                    padding: 16px;
+                    border-radius: 10px;
+                }
+                .live-calc {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .live-calc.cols-5 {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .target-row {
+                    grid-template-columns: 1fr 1fr;
+                }
+                .target-row .suggest-btn {
+                    grid-column: 1 / -1;
+                }
+                .tabs {
+                    order: 4;
+                    width: 100%;
+                    justify-content: center;
+                }
             }
 
             @media (max-width: 480px) {
-                header.topbar { flex-direction: column; align-items: stretch; }
-                .brand { justify-content: center; }
-                .topbar .search { order: 3; flex: 1 1 100%; }
-                .controls { order: 2; justify-content: space-between; width: 100%; }
-                .privacy-btn { flex: 1 1 auto; justify-content: center; }
-                .add-bar { flex-direction: column; align-items: stretch; }
-                #addProductBtn, #addOrderBtn { width: 100%; text-align: center; }
-                .stat-chips { justify-content: space-between; }
-                .chip { flex: 1 1 calc(50% - 8px); }
-                .card-main { flex-direction: column; align-items: stretch; }
-                .card-figures { grid-template-columns: 1fr; }
-                .figure { flex-direction: row; align-items: center; justify-content: space-between; }
-                .card-actions { justify-content: space-between; }
-                .card-actions button { flex: 1 1 auto; text-align: center; padding: 9px 6px; }
-                .modal-overlay { padding: 14px 10px; }
-                .modal-actions { flex-direction: column-reverse; }
-                .modal-actions button { width: 100%; }
+                header.topbar {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .brand {
+                    justify-content: center;
+                }
+                .topbar .search {
+                    order: 3;
+                    flex: 1 1 100%;
+                }
+                .controls {
+                    order: 2;
+                    justify-content: space-between;
+                    width: 100%;
+                }
+                .privacy-btn {
+                    flex: 1 1 auto;
+                    justify-content: center;
+                }
+                .add-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                #addProductBtn,
+                #addOrderBtn {
+                    width: 100%;
+                    text-align: center;
+                }
+                .stat-chips {
+                    justify-content: space-between;
+                }
+                .chip {
+                    flex: 1 1 calc(50% - 8px);
+                }
+                .card-main {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .card-figures {
+                    grid-template-columns: 1fr;
+                }
+                .figure {
+                    flex-direction: row;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                .card-actions {
+                    justify-content: space-between;
+                }
+                .card-actions button {
+                    flex: 1 1 auto;
+                    text-align: center;
+                    padding: 9px 6px;
+                }
+                .modal-overlay {
+                    padding: 14px 10px;
+                }
+                .modal-actions {
+                    flex-direction: column-reverse;
+                }
+                .modal-actions button {
+                    width: 100%;
+                }
             }
 
             @media (max-width: 360px) {
-                .brand h1 { font-size: 1.1rem; }
-                .chip { flex: 1 1 100%; }
+                .brand h1 {
+                    font-size: 1.1rem;
+                }
+                .chip {
+                    flex: 1 1 100%;
+                }
             }
         </style>
     </head>
@@ -749,14 +1033,16 @@
                     <button id="addOrderBtn" class="btn-primary">+ Add order</button>
                     <div class="stat-chips">
                         <div class="chip">Orders<b id="ordCount" class="mono">0</b></div>
-                        <div class="chip">Gross sales<b id="ordGross" class="mono priv-value amt">—</b></div>
-                        <div class="chip">After discounts<b id="ordNet" class="mono priv-value amt">—</b></div>
-                        <div class="chip">Est. cost<b id="ordCost" class="mono priv-value amt">—</b></div>
-                        <div class="chip">Est. profit<b id="ordProfit" class="mono priv-value amt">—</b></div>
+                        <div class="chip">Gross paid<b id="ordGross" class="mono priv-value amt">—</b></div>
+                        <div class="chip">After voucher<b id="ordAfterV" class="mono priv-value amt">—</b></div>
+                        <div class="chip">Net cost<b id="ordNet" class="mono priv-value amt">—</b></div>
+                        <div class="chip">Lines<b id="ordLines" class="mono">0</b></div>
                     </div>
                 </section>
                 <section id="orderList" class="order-list"></section>
-                <p id="emptyOrders" class="empty-state" hidden>No orders yet. Log Shopee, Lazada, or other online orders with voucher &amp; shipping discounts.</p>
+                <p id="emptyOrders" class="empty-state" hidden>
+                    No orders yet. Log Shopee, Lazada, or other purchases — enter qty &amp; amount paid, then see suggested selling prices from your target margin or markup.
+                </p>
             </div>
 
             <p class="hint">Tip: press <strong>P</strong> anytime to quickly toggle privacy mode. Tap a masked number to peek at it for a few seconds.</p>
@@ -860,18 +1146,18 @@
                 </label>
                 <label>
                     Notes <span style="font-weight: 400">(optional)</span>
-                    <input id="oNotes" type="text" placeholder="Buyer name, SKU notes…" />
+                    <input id="oNotes" type="text" placeholder="Supplier, batch, SKU notes…" />
                 </label>
 
                 <div class="cost-section">
                     <div class="cost-header">
-                        <span>Line items</span>
+                        <span>Line items — qty &amp; amount paid</span>
                         <button type="button" id="addOrderItem">+ Add item</button>
                     </div>
                     <div id="orderItems"></div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
                     <label>
                         Subtotal (before discounts)
                         <input id="oSubtotal" type="number" step="0.01" min="0" placeholder="0.00" />
@@ -881,7 +1167,7 @@
                         <input id="oVoucher" type="number" step="0.01" min="0" placeholder="0.00" />
                     </label>
                     <label>
-                        Shipping fee charged to buyer
+                        Shipping fee paid
                         <input id="oShipFee" type="number" step="0.01" min="0" placeholder="0.00" />
                     </label>
                     <label>
@@ -890,12 +1176,27 @@
                     </label>
                 </div>
 
-                <div class="live-calc cols-5">
+                <div class="order-target-row">
+                    <label>
+                        Target margin % <span style="font-weight: 400">(for suggest report)</span>
+                        <input id="oTargetMargin" type="number" step="0.1" min="0" max="99" placeholder="e.g. 30" />
+                    </label>
+                    <label>
+                        Target markup % <span style="font-weight: 400">(used if margin empty)</span>
+                        <input id="oTargetMarkup" type="number" step="0.1" min="0" placeholder="e.g. 50" />
+                    </label>
+                </div>
+
+                <div class="live-calc cols-3">
                     <div><span class="label">Gross</span><span class="value priv-value amt" id="oPrevGross">—</span></div>
                     <div><span class="label">After voucher</span><span class="value priv-value amt" id="oPrevAfterV">—</span></div>
-                    <div><span class="label">Net received</span><span class="value priv-value amt" id="oPrevNet">—</span></div>
-                    <div><span class="label">Est. cost</span><span class="value priv-value amt" id="oPrevCost">—</span></div>
-                    <div><span class="label">Est. profit</span><span class="value priv-value amt" id="oPrevProfit">—</span></div>
+                    <div><span class="label">Net cost paid</span><span class="value priv-value amt" id="oPrevNet">—</span></div>
+                </div>
+
+                <div class="suggest-report" id="suggestReport">
+                    <h3>Suggested selling prices</h3>
+                    <p class="empty-hint" id="suggestReportEmpty">Add line items and a target margin or markup to see suggested unit prices.</p>
+                    <div id="suggestReportBody" hidden></div>
                 </div>
 
                 <div class="modal-actions">
@@ -1017,9 +1318,7 @@
 
                 // ---------- Utilities ----------
                 function escapeHtml(str) {
-                    return String(str).replace(/[&<>"']/g, (c) =>
-                        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-                    );
+                    return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
                 }
 
                 function fmtMoney(n) {
@@ -1050,25 +1349,44 @@
 
                 function computeOrderTotals(order) {
                     const items = order.items || [];
-                    const subtotal = Number(order.subtotal) || items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.unitPrice) || 0), 0);
+                    // amount = total paid for the line qty (not unit price)
+                    const itemsSum = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                    const subtotal = Number(order.subtotal) || itemsSum;
                     const voucher = Number(order.voucher) || 0;
                     const shipFee = Number(order.shipFee) || 0;
                     const shipDiscount = Number(order.shipDiscount) || 0;
                     const afterVoucher = Math.max(0, subtotal - voucher);
-                    const netReceived = afterVoucher + shipFee - shipDiscount;
-                    let estCost = 0;
-                    items.forEach((it) => {
-                        const prod = state.products.find((p) => p.id === it.productId) ||
-                            state.products.find((p) => (p.name || "").toLowerCase() === (it.name || "").toLowerCase());
-                        if (prod) {
-                            const t = computeTotals(prod);
-                            estCost += t.totalCost * (Number(it.qty) || 0);
-                        } else if (it.unitCost != null) {
-                            estCost += (Number(it.unitCost) || 0) * (Number(it.qty) || 0);
-                        }
+                    // Net cost you actually paid (subtotal − voucher + shipping − ship discount)
+                    const netCost = Math.max(0, afterVoucher + shipFee - shipDiscount);
+                    // Allocate net cost across lines proportional to their amount share
+                    const lineDetails = items.map((it) => {
+                        const qty = Number(it.qty) || 0;
+                        const amount = Number(it.amount) || 0;
+                        const share = itemsSum > 0 ? amount / itemsSum : items.length ? 1 / items.length : 0;
+                        const allocated = netCost * share;
+                        const unitCost = qty > 0 ? allocated / qty : 0;
+                        return {
+                            name: it.name || "Item",
+                            productId: it.productId || null,
+                            qty,
+                            amount,
+                            allocated,
+                            unitCost,
+                        };
                     });
-                    const estProfit = netReceived - estCost;
-                    return { subtotal, voucher, shipFee, shipDiscount, afterVoucher, netReceived, estCost, estProfit };
+                    return {
+                        subtotal,
+                        voucher,
+                        shipFee,
+                        shipDiscount,
+                        afterVoucher,
+                        netCost,
+                        netReceived: netCost, // alias for older UI labels
+                        estCost: netCost,
+                        estProfit: 0,
+                        itemsSum,
+                        lineDetails,
+                    };
                 }
 
                 function suggestPriceFromCost(cost, targetMargin, targetMarkup) {
@@ -1203,8 +1521,7 @@
                     });
                     document.getElementById("productsPanel").classList.toggle("active", tab === "products");
                     document.getElementById("ordersPanel").classList.toggle("active", tab === "orders");
-                    document.getElementById("searchInput").placeholder =
-                        tab === "products" ? "Search product or category…" : "Search order, platform, ref…";
+                    document.getElementById("searchInput").placeholder = tab === "products" ? "Search product or category…" : "Search order, platform, ref…";
                     if (tab === "products") {
                         renderList(document.getElementById("searchInput").value);
                         renderSummary();
@@ -1241,10 +1558,7 @@
 
                     const items = state.products.filter((p) => {
                         if (!filter) return true;
-                        return (
-                            (p.name || "").toLowerCase().includes(filter) ||
-                            (p.category || "").toLowerCase().includes(filter)
-                        );
+                        return (p.name || "").toLowerCase().includes(filter) || (p.category || "").toLowerCase().includes(filter);
                     });
 
                     listEl.innerHTML = "";
@@ -1293,12 +1607,10 @@
         </div>
         <div class="card-details" hidden>
           <ul class="cost-breakdown">
-            ${(product.costItems || [])
-                .map(
-                    (c) =>
-                        `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`
-                )
-                .join("") || "<li><span>No cost lines added</span><span></span></li>"}
+            ${
+                (product.costItems || []).map((c) => `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`).join("") ||
+                "<li><span>No cost lines added</span><span></span></li>"
+            }
           </ul>
           ${
               hist.length
@@ -1311,7 +1623,7 @@
                       .reverse()
                       .map(
                           (h) =>
-                              `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`
+                              `<li><span class="h-date">${fmtDate(h.date)}</span><span class="mono price-visible">${fmtMoney(h.price)}</span><span class="h-note">${escapeHtml(h.note || "")}</span></li>`,
                       )
                       .join("")}
                 </ul>
@@ -1355,9 +1667,9 @@
                     const totals = state.orders.map(computeOrderTotals);
                     document.getElementById("ordCount").textContent = state.orders.length;
                     document.getElementById("ordGross").textContent = fmtMoney(totals.reduce((s, t) => s + t.subtotal, 0));
-                    document.getElementById("ordNet").textContent = fmtMoney(totals.reduce((s, t) => s + t.netReceived, 0));
-                    document.getElementById("ordCost").textContent = fmtMoney(totals.reduce((s, t) => s + t.estCost, 0));
-                    document.getElementById("ordProfit").textContent = fmtMoney(totals.reduce((s, t) => s + t.estProfit, 0));
+                    document.getElementById("ordAfterV").textContent = fmtMoney(totals.reduce((s, t) => s + t.afterVoucher, 0));
+                    document.getElementById("ordNet").textContent = fmtMoney(totals.reduce((s, t) => s + t.netCost, 0));
+                    document.getElementById("ordLines").textContent = state.orders.reduce((s, o) => s + (o.items || []).length, 0);
                 }
 
                 function renderOrders(filterText) {
@@ -1395,10 +1707,10 @@
                         card.className = "order-card";
                         card.dataset.id = order.id;
 
-                        const profitClass = t.estProfit > 0 ? "profit-pos" : t.estProfit < 0 ? "profit-neg" : "";
-                        const itemSummary = (order.items || [])
-                            .map((it) => `${it.qty || 1}× ${it.name || "?"}`)
-                            .join(", ");
+                        const itemSummary = (order.items || []).map((it) => `${it.qty || 1}× ${it.name || "?"}`).join(", ");
+
+                        const tm = order.targetMargin;
+                        const tk = order.targetMarkup;
 
                         card.innerHTML = `
         <div class="card-main">
@@ -1414,8 +1726,8 @@
           <div class="card-figures order-figs">
             <div class="figure"><span class="label">Gross</span><span class="value priv-value amt">${fmtMoney(t.subtotal)}</span></div>
             <div class="figure"><span class="label">After voucher</span><span class="value priv-value amt">${fmtMoney(t.afterVoucher)}</span></div>
-            <div class="figure"><span class="label">Net received</span><span class="value priv-value amt">${fmtMoney(t.netReceived)}</span></div>
-            <div class="figure"><span class="label">Est. profit</span><span class="value priv-value amt ${profitClass}">${fmtMoney(t.estProfit)}</span></div>
+            <div class="figure"><span class="label">Net cost</span><span class="value priv-value amt">${fmtMoney(t.netCost)}</span></div>
+            <div class="figure"><span class="label">Lines</span><span class="value">${(order.items || []).length}</span></div>
           </div>
           <div class="card-actions">
             <button type="button" class="expand-btn">Details ▾</button>
@@ -1427,23 +1739,24 @@
           <ul class="cost-breakdown">
             <li><span>Subtotal (before discounts)</span><span class="priv-value amt">${fmtMoney(t.subtotal)}</span></li>
             <li><span>Voucher / coupon</span><span class="priv-value amt">−${fmtMoney(t.voucher)}</span></li>
-            <li><span>Shipping fee (buyer)</span><span class="priv-value amt">${fmtMoney(t.shipFee)}</span></li>
+            <li><span>Shipping fee paid</span><span class="priv-value amt">${fmtMoney(t.shipFee)}</span></li>
             <li><span>Shipping discount</span><span class="priv-value amt">−${fmtMoney(t.shipDiscount)}</span></li>
-            <li><span><strong>Net received</strong></span><span class="priv-value amt"><strong>${fmtMoney(t.netReceived)}</strong></span></li>
-            <li><span>Estimated product cost</span><span class="priv-value amt">${fmtMoney(t.estCost)}</span></li>
-            <li><span><strong>Estimated profit</strong></span><span class="priv-value amt ${profitClass}"><strong>${fmtMoney(t.estProfit)}</strong></span></li>
+            <li><span><strong>Net cost paid</strong></span><span class="priv-value amt"><strong>${fmtMoney(t.netCost)}</strong></span></li>
           </ul>
-          ${(order.items || []).length
-              ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Items</h4>
+          ${
+              (t.lineDetails || []).length
+                  ? `<h4 style="font-size:0.78rem;margin:12px 0 6px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.04em">Items &amp; unit cost</h4>
             <ul class="cost-breakdown">
-              ${order.items
-                  .map(
-                      (it) =>
-                          `<li><span>${Number(it.qty) || 1} × ${escapeHtml(it.name || "Item")}</span><span class="priv-value amt">${fmtMoney((Number(it.qty) || 1) * (Number(it.unitPrice) || 0))}</span></li>`
-                  )
+              ${t.lineDetails
+                  .map((it) => {
+                      const suggested = suggestPriceFromCost(it.unitCost, tm, tk);
+                      const sugTxt = suggested != null && isFinite(suggested) ? ` → suggest ${fmtMoney(Math.ceil(suggested * 100) / 100)}` : "";
+                      return `<li><span>${it.qty || 1} × ${escapeHtml(it.name)} <span style="color:var(--ink-soft)">(paid ${fmtMoney(it.amount)})</span></span><span class="priv-value amt">${fmtMoney(it.unitCost)}/u${sugTxt}</span></li>`;
+                  })
                   .join("")}
             </ul>`
-              : ""}
+                  : ""
+          }
         </div>
       `;
 
@@ -1520,8 +1833,7 @@
                     const match = state.products.find((p) => (p.name || "").toLowerCase() === name);
                     if (match) {
                         state.matchedProductId = match.id;
-                        document.getElementById("nameMatchText").textContent =
-                            `Found existing product “${match.name}”. Quick update will edit it instead of creating a duplicate.`;
+                        document.getElementById("nameMatchText").textContent = `Found existing product “${match.name}”. Quick update will edit it instead of creating a duplicate.`;
                         banner.classList.add("visible");
                     } else {
                         banner.classList.remove("visible");
@@ -1537,13 +1849,8 @@
                     document.getElementById("fUnit").value = product ? product.unit || "" : "";
                     document.getElementById("fPrice").value = product ? product.sellingPrice : "";
                     document.getElementById("fTargetMargin").value =
-                        product && product.targetMargin != null
-                            ? product.targetMargin
-                            : state.settings.defaultMargin != null
-                              ? state.settings.defaultMargin
-                              : "";
-                    document.getElementById("fTargetMarkup").value =
-                        product && product.targetMarkup != null ? product.targetMarkup : "";
+                        product && product.targetMargin != null ? product.targetMargin : state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
+                    document.getElementById("fTargetMarkup").value = product && product.targetMarkup != null ? product.targetMarkup : "";
 
                     costLinesEl.innerHTML = "";
                     if (product && product.costItems && product.costItems.length) {
@@ -1663,27 +1970,28 @@
 
                 function addOrderItemRow(item) {
                     item = item || {};
+                    // Migrate old unitPrice data → amount if needed
+                    let amountVal = item.amount;
+                    if (amountVal == null && item.unitPrice != null) {
+                        amountVal = (Number(item.qty) || 0) * (Number(item.unitPrice) || 0);
+                    }
                     const row = document.createElement("div");
                     row.className = "order-item-row";
                     row.innerHTML = `
-      <select class="oi-product" style="flex:1 1 140px">${productOptionsHtml(item.productId, item.name)}</select>
-      <input type="text" class="oi-name" placeholder="Item name" value="${escapeHtml(item.name || "")}" style="flex:1 1 120px">
-      <input type="number" class="oi-qty" step="1" min="0" placeholder="Qty" value="${item.qty != null ? item.qty : 1}" style="flex:0 1 70px">
-      <input type="number" class="oi-price" step="0.01" min="0" placeholder="Unit price" value="${item.unitPrice != null ? item.unitPrice : ""}" style="flex:0 1 90px">
+      <select class="oi-product" style="flex:1 1 130px">${productOptionsHtml(item.productId, item.name)}</select>
+      <input type="text" class="oi-name" placeholder="Item name" value="${escapeHtml(item.name || "")}" style="flex:1 1 110px">
+      <input type="number" class="oi-qty" step="any" min="0" placeholder="Qty" value="${item.qty != null ? item.qty : 1}" style="flex:0 1 70px">
+      <input type="number" class="oi-amount" step="0.01" min="0" placeholder="Amount paid" value="${amountVal != null && amountVal !== "" ? amountVal : ""}" style="flex:0 1 100px">
       <button type="button" class="oi-remove" title="Remove">✕</button>
     `;
                     const prodSel = row.querySelector(".oi-product");
                     const nameInp = row.querySelector(".oi-name");
-                    const priceInp = row.querySelector(".oi-price");
 
                     prodSel.addEventListener("change", () => {
                         const id = parseInt(prodSel.value, 10);
                         if (id) {
                             const p = state.products.find((x) => x.id === id);
-                            if (p) {
-                                nameInp.value = p.name;
-                                if (!priceInp.value) priceInp.value = p.sellingPrice || "";
-                            }
+                            if (p) nameInp.value = p.name;
                         }
                         updateOrderPreview();
                     });
@@ -1703,15 +2011,65 @@
                                 productId: pid ? parseInt(pid, 10) : null,
                                 name: row.querySelector(".oi-name").value.trim(),
                                 qty: parseFloat(row.querySelector(".oi-qty").value) || 0,
-                                unitPrice: parseFloat(row.querySelector(".oi-price").value) || 0,
+                                amount: parseFloat(row.querySelector(".oi-amount").value) || 0,
                             };
                         })
-                        .filter((it) => it.name || it.qty || it.unitPrice);
+                        .filter((it) => it.name || it.qty || it.amount);
+                }
+
+                function renderSuggestReport(t, targetMargin, targetMarkup) {
+                    const emptyEl = document.getElementById("suggestReportEmpty");
+                    const bodyEl = document.getElementById("suggestReportBody");
+                    const lines = t.lineDetails || [];
+                    const hasTarget =
+                        (targetMargin != null && targetMargin !== "" && isFinite(Number(targetMargin))) || (targetMarkup != null && targetMarkup !== "" && isFinite(Number(targetMarkup)));
+
+                    if (!lines.length || !hasTarget) {
+                        emptyEl.hidden = false;
+                        emptyEl.textContent = !lines.length
+                            ? "Add line items and a target margin or markup to see suggested unit prices."
+                            : "Enter a target margin % or markup % above to generate suggested selling prices.";
+                        bodyEl.hidden = true;
+                        bodyEl.innerHTML = "";
+                        return;
+                    }
+
+                    emptyEl.hidden = true;
+                    bodyEl.hidden = false;
+
+                    const rows = lines
+                        .map((it) => {
+                            const suggested = suggestPriceFromCost(it.unitCost, targetMargin, targetMarkup);
+                            const sug = suggested != null && isFinite(suggested) ? fmtMoney(Math.ceil(suggested * 100) / 100) : "—";
+                            return `<tr>
+              <td>${escapeHtml(it.name)}<br><span style="font-size:0.72rem;color:var(--ink-soft)">${it.qty || 0} pcs · paid ${fmtMoney(it.amount)}</span></td>
+              <td class="sr-unit priv-value amt">${fmtMoney(it.unitCost)}</td>
+              <td class="sr-suggest">${sug}</td>
+            </tr>`;
+                        })
+                        .join("");
+
+                    bodyEl.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Unit cost</th>
+                <th>Suggest sell</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="font-size:0.72rem;color:var(--ink-soft);margin:8px 0 0">
+            Unit cost allocates net order cost (after voucher &amp; shipping) by each line’s share of amount paid.
+            ${targetMargin != null && targetMargin !== "" ? `Using margin ${Number(targetMargin).toFixed(1)}%.` : `Using markup ${Number(targetMarkup).toFixed(1)}%.`}
+          </p>`;
+                    bodyEl.querySelectorAll(".priv-value").forEach(bindPeek);
                 }
 
                 function updateOrderPreview() {
                     const items = readOrderItems();
-                    const subFromItems = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.unitPrice) || 0), 0);
+                    const subFromItems = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
                     const subInput = document.getElementById("oSubtotal");
                     if (!subInput.dataset.touched) {
                         subInput.value = subFromItems ? subFromItems.toFixed(2) : "";
@@ -1726,9 +2084,11 @@
                     const t = computeOrderTotals(draft);
                     document.getElementById("oPrevGross").textContent = fmtMoney(t.subtotal);
                     document.getElementById("oPrevAfterV").textContent = fmtMoney(t.afterVoucher);
-                    document.getElementById("oPrevNet").textContent = fmtMoney(t.netReceived);
-                    document.getElementById("oPrevCost").textContent = fmtMoney(t.estCost);
-                    document.getElementById("oPrevProfit").textContent = fmtMoney(t.estProfit);
+                    document.getElementById("oPrevNet").textContent = fmtMoney(t.netCost);
+
+                    const tm = document.getElementById("oTargetMargin").value;
+                    const tk = document.getElementById("oTargetMarkup").value;
+                    renderSuggestReport(t, tm, tk);
                 }
 
                 function openOrderForm(order) {
@@ -1748,6 +2108,9 @@
                     document.getElementById("oVoucher").value = order && order.voucher != null ? order.voucher : "";
                     document.getElementById("oShipFee").value = order && order.shipFee != null ? order.shipFee : "";
                     document.getElementById("oShipDiscount").value = order && order.shipDiscount != null ? order.shipDiscount : "";
+                    document.getElementById("oTargetMargin").value =
+                        order && order.targetMargin != null ? order.targetMargin : state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
+                    document.getElementById("oTargetMarkup").value = order && order.targetMarkup != null ? order.targetMarkup : "";
 
                     orderItemsEl.innerHTML = "";
                     if (order && order.items && order.items.length) {
@@ -1770,7 +2133,7 @@
                     addOrderItemRow({});
                     updateOrderPreview();
                 });
-                ["oVoucher", "oShipFee", "oShipDiscount"].forEach((id) => {
+                ["oVoucher", "oShipFee", "oShipDiscount", "oTargetMargin", "oTargetMarkup"].forEach((id) => {
                     document.getElementById(id).addEventListener("input", updateOrderPreview);
                 });
                 document.getElementById("oSubtotal").addEventListener("input", () => {
@@ -1783,19 +2146,21 @@
 
                 document.getElementById("saveOrder").addEventListener("click", async () => {
                     const items = readOrderItems();
-                    const subFromItems = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.unitPrice) || 0), 0);
+                    const subFromItems = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                    const tmVal = document.getElementById("oTargetMargin").value;
+                    const tkVal = document.getElementById("oTargetMarkup").value;
                     const order = {
                         platform: document.getElementById("oPlatform").value,
                         ref: document.getElementById("oRef").value.trim(),
                         notes: document.getElementById("oNotes").value.trim(),
-                        date: document.getElementById("oDate").value
-                            ? new Date(document.getElementById("oDate").value).getTime()
-                            : Date.now(),
+                        date: document.getElementById("oDate").value ? new Date(document.getElementById("oDate").value).getTime() : Date.now(),
                         items,
                         subtotal: parseFloat(document.getElementById("oSubtotal").value) || subFromItems,
                         voucher: parseFloat(document.getElementById("oVoucher").value) || 0,
                         shipFee: parseFloat(document.getElementById("oShipFee").value) || 0,
                         shipDiscount: parseFloat(document.getElementById("oShipDiscount").value) || 0,
+                        targetMargin: tmVal !== "" ? parseFloat(tmVal) : null,
+                        targetMarkup: tkVal !== "" ? parseFloat(tkVal) : null,
                         updatedAt: Date.now(),
                     };
 
@@ -1851,8 +2216,7 @@
                 document.getElementById("settingsBtn").addEventListener("click", () => {
                     document.getElementById("setShopName").value = state.settings.shopName;
                     document.getElementById("setCurrency").value = state.settings.currency;
-                    document.getElementById("setDefaultMargin").value =
-                        state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
+                    document.getElementById("setDefaultMargin").value = state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
                     settingsModal.hidden = false;
                 });
                 settingsModal.addEventListener("click", (e) => {
@@ -1878,9 +2242,7 @@
                 });
 
                 document.getElementById("exportCsv").addEventListener("click", () => {
-                    const rows = [
-                        ["Name", "Category", "Unit", "Cost Breakdown", "Total Cost", "Selling Price", "Profit", "Margin %", "Markup %", "Target Margin %", "Target Markup %"],
-                    ];
+                    const rows = [["Name", "Category", "Unit", "Cost Breakdown", "Total Cost", "Selling Price", "Profit", "Margin %", "Markup %", "Target Margin %", "Target Markup %"]];
                     state.products.forEach((p) => {
                         const t = computeTotals(p);
                         const breakdown = (p.costItems || []).map((c) => `${c.label}: ${c.amount}`).join(" | ");
@@ -1902,12 +2264,15 @@
                 });
 
                 document.getElementById("exportOrdersCsv").addEventListener("click", () => {
-                    const rows = [
-                        ["Platform", "Ref", "Date", "Items", "Subtotal", "Voucher", "Ship Fee", "Ship Discount", "Net Received", "Est Cost", "Est Profit", "Notes"],
-                    ];
+                    const rows = [["Platform", "Ref", "Date", "Items", "Subtotal", "Voucher", "Ship Fee", "Ship Discount", "Net Cost", "Target Margin %", "Target Markup %", "Notes"]];
                     state.orders.forEach((o) => {
                         const t = computeOrderTotals(o);
-                        const itemsStr = (o.items || []).map((i) => `${i.qty}x ${i.name}@${i.unitPrice}`).join(" | ");
+                        const itemsStr = (o.items || [])
+                            .map((i) => {
+                                const amt = i.amount != null ? i.amount : (Number(i.qty) || 0) * (Number(i.unitPrice) || 0);
+                                return `${i.qty}x ${i.name}=${amt}`;
+                            })
+                            .join(" | ");
                         rows.push([
                             o.platform || "",
                             o.ref || "",
@@ -1917,9 +2282,9 @@
                             t.voucher.toFixed(2),
                             t.shipFee.toFixed(2),
                             t.shipDiscount.toFixed(2),
-                            t.netReceived.toFixed(2),
-                            t.estCost.toFixed(2),
-                            t.estProfit.toFixed(2),
+                            t.netCost.toFixed(2),
+                            o.targetMargin != null ? o.targetMargin : "",
+                            o.targetMarkup != null ? o.targetMarkup : "",
                             o.notes || "",
                         ]);
                     });
@@ -1941,11 +2306,7 @@
                 async function init() {
                     db = await openDatabase();
 
-                    const [shopName, currency, defaultMargin] = await Promise.all([
-                        dbGetSetting("shopName"),
-                        dbGetSetting("currency"),
-                        dbGetSetting("defaultMargin"),
-                    ]);
+                    const [shopName, currency, defaultMargin] = await Promise.all([dbGetSetting("shopName"), dbGetSetting("currency"), dbGetSetting("defaultMargin")]);
                     if (shopName !== undefined) state.settings.shopName = shopName;
                     if (currency !== undefined) state.settings.currency = currency;
                     if (defaultMargin !== undefined) state.settings.defaultMargin = defaultMargin;
