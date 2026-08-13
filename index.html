@@ -1389,7 +1389,8 @@
                     <div class="stat-chips">
                         <div class="chip">Materials<b id="invCount" class="mono">0</b></div>
                         <div class="chip">Low stock<b id="invLow" class="mono">0</b></div>
-                        <div class="chip">Inv. value<b id="invValue" class="mono priv-value amt">—</b></div>
+                        <div class="chip" title="From products list: sellable units × product cost">Inv @ cost<b id="invValueCost" class="mono priv-value amt">—</b></div>
+                        <div class="chip" title="From products list: sellable units × selling price">Inv @ sell<b id="invValueSell" class="mono priv-value amt">—</b></div>
                     </div>
                 </section>
 
@@ -4317,7 +4318,6 @@
                 }
 
                 // ---------- Inventory ----------
-                // ---------- Inventory ----------
                 function materialCurrentQty(mat) {
                     let qty = Number(mat.startingQty) || 0;
                     const moves = state.stockMoves.filter((m) => m.materialId === mat.id).sort((a, b) => (a.date || 0) - (b.date || 0) || (a.id || 0) - (b.id || 0));
@@ -4329,6 +4329,61 @@
                     return qty;
                 }
 
+                /**
+                 * Estimate how many units of a product current material stock can still make/sell.
+                 * Uses non-optional recipe lines only (bottleneck = min of available / invQty).
+                 */
+                function productSellableUnits(product, qtyByMaterialId) {
+                    const lines = recipeFromProduct(product).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0);
+                    if (!lines.length) return 0;
+                    let units = Infinity;
+                    for (const ln of lines) {
+                        const have = qtyByMaterialId[ln.materialId] != null ? qtyByMaterialId[ln.materialId] : 0;
+                        const need = Number(ln.qty) || 0;
+                        if (need <= 0) continue;
+                        units = Math.min(units, have / need);
+                    }
+                    if (!isFinite(units) || units < 0) return 0;
+                    return units;
+                }
+
+                /** Inventory value from products list: sellable units × cost / selling price. */
+                function computeProductInventoryValues() {
+                    const qtyByMaterialId = {};
+                    state.materials.forEach((m) => {
+                        qtyByMaterialId[m.id] = materialCurrentQty(m);
+                    });
+                    // Consume stock across products in name order so multi-product sharing is approximate not double-counted
+                    const remaining = Object.assign({}, qtyByMaterialId);
+                    let valueCost = 0;
+                    let valueSell = 0;
+                    const products = state.products.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                    products.forEach((p) => {
+                        const lines = recipeFromProduct(p).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0);
+                        if (!lines.length) return;
+                        let units = Infinity;
+                        for (const ln of lines) {
+                            const have = remaining[ln.materialId] != null ? remaining[ln.materialId] : 0;
+                            const need = Number(ln.qty) || 0;
+                            if (need <= 0) continue;
+                            units = Math.min(units, have / need);
+                        }
+                        if (!isFinite(units) || units <= 0) return;
+                        // Use whole units for discrete goods; keep fractional for continuous (ink-heavy) — floor only when all invQty are integers >= 1
+                        const allWhole = lines.every((ln) => Number.isInteger(Number(ln.qty)) && Number(ln.qty) >= 1);
+                        if (allWhole) units = Math.floor(units);
+                        if (units <= 0) return;
+                        const t = computeTotals(p);
+                        valueCost += units * (t.totalCost || 0);
+                        valueSell += units * (Number(p.sellingPrice) || 0);
+                        // allocate consumed materials so shared stock isn't counted twice
+                        lines.forEach((ln) => {
+                            remaining[ln.materialId] = (remaining[ln.materialId] || 0) - units * (Number(ln.qty) || 0);
+                        });
+                    });
+                    return { valueCost, valueSell };
+                }
+
                 function renderInventory(filterText) {
                     const q = (filterText || "").trim().toLowerCase();
                     const list = document.getElementById("materialList");
@@ -4337,11 +4392,9 @@
                     if (q) mats = mats.filter((m) => (m.name || "").toLowerCase().includes(q) || (m.unit || "").toLowerCase().includes(q) || (m.notes || "").toLowerCase().includes(q));
 
                     let low = 0;
-                    let value = 0;
                     mats.forEach((mat) => {
                         const cur = materialCurrentQty(mat);
                         const cost = Number(mat.costPerUnit) || 0;
-                        value += cur * cost;
                         const reorder = mat.reorderLevel != null ? Number(mat.reorderLevel) : null;
                         if (reorder != null && cur <= reorder) low++;
 
@@ -4392,9 +4445,15 @@
 
                     document.getElementById("invCount").textContent = String(state.materials.length);
                     document.getElementById("invLow").textContent = String(low);
-                    document.getElementById("invValue").textContent = fmtMoney(value);
+                    const invVals = computeProductInventoryValues();
+                    const costEl = document.getElementById("invValueCost");
+                    const sellEl = document.getElementById("invValueSell");
+                    if (costEl) costEl.textContent = fmtMoney(invVals.valueCost);
+                    if (sellEl) sellEl.textContent = fmtMoney(invVals.valueSell);
                     document.getElementById("emptyMaterials").hidden = state.materials.length > 0;
                     list.querySelectorAll(".priv-value").forEach(bindPeek);
+                    if (costEl) bindPeek(costEl);
+                    if (sellEl) bindPeek(sellEl);
 
                     renderStockTrend();
                     renderRecipes();
