@@ -1296,10 +1296,14 @@
                 <div class="cost-section">
                     <div class="cost-header">
                         <span>Cost breakdown (= inventory recipe)</span>
-                        <button type="button" id="addCostLine">+ Add cost line</button>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+                            <button type="button" id="trackStockBtn" class="btn-secondary btn-sm" title="For school supplies: 1 material unit per sale">Track stock 1×</button>
+                            <button type="button" id="addCostLine">+ Add cost line</button>
+                        </div>
                     </div>
                     <p class="suggest-hint" style="margin: 0 0 8px">
-                        Link a line to a material + inv qty to deduct stock on usage. Amount is still ₱ cost. Optional = only when marked on Apply usage (e.g. free print).
+                        Print jobs: link paper/ink/film + inv qty. <strong>School supplies:</strong> use <em>Track stock 1×</em> so each POS sale deducts 1 pc. Optional = free extras only when
+                        included.
                     </p>
                     <div id="costLines"></div>
                 </div>
@@ -2635,6 +2639,92 @@
                 document.getElementById("cancelForm").addEventListener("click", closeForm);
                 document.getElementById("closeFormBtn").addEventListener("click", closeForm);
                 document.getElementById("addCostLine").addEventListener("click", () => addCostLineRow({}));
+
+                async function ensureMaterialByName(name, unit) {
+                    const key = (name || "").toLowerCase().trim();
+                    if (!key) return null;
+                    let mat = state.materials.find((m) => (m.name || "").toLowerCase().trim() === key);
+                    if (mat) return mat;
+                    mat = {
+                        name: name.trim(),
+                        unit: unit || "pcs",
+                        startingQty: 0,
+                        reorderLevel: 10,
+                        costPerUnit: 0,
+                        notes: "Auto for stock tracking",
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                    };
+                    const id = await dbPut("materials", mat);
+                    mat.id = mat.id || id;
+                    state.materials.push(mat);
+                    return mat;
+                }
+
+                document.getElementById("trackStockBtn").addEventListener("click", async () => {
+                    const name = document.getElementById("fName").value.trim();
+                    if (!name) {
+                        alert("Enter the product name first (e.g. Ballpen).");
+                        return;
+                    }
+                    const mat = await ensureMaterialByName(name, "pcs");
+                    if (!mat) return;
+
+                    // Prefer attaching to an existing cost line with same label or empty material
+                    const rows = Array.from(document.querySelectorAll("#costLines .cost-line"));
+                    let attached = false;
+                    for (const row of rows) {
+                        const label = (row.querySelector(".cl-label") && row.querySelector(".cl-label").value.trim()) || "";
+                        const matSel = row.querySelector(".cl-mat");
+                        const invInp = row.querySelector(".cl-invqty");
+                        const amountInp = row.querySelector(".cl-amount");
+                        const emptyMat = !matSel || !matSel.value;
+                        const sameLabel = label.toLowerCase() === name.toLowerCase() || !label;
+                        if (emptyMat && sameLabel) {
+                            if (!label) row.querySelector(".cl-label").value = name;
+                            if (matSel) {
+                                // refresh options in case material was just created
+                                const prev = matSel.value;
+                                matSel.innerHTML = materialOptionsHtml(mat.id);
+                            }
+                            if (invInp && (invInp.value === "" || invInp.value === "0")) invInp.value = "1";
+                            attached = true;
+                            break;
+                        }
+                        // already linked to this material
+                        if (matSel && parseInt(matSel.value, 10) === mat.id) {
+                            if (invInp && !invInp.value) invInp.value = "1";
+                            attached = true;
+                            break;
+                        }
+                    }
+                    if (!attached) {
+                        addCostLineRow({
+                            label: name,
+                            amount: parseFloat(document.getElementById("fPrice").value) ? 0 : 0,
+                            materialId: mat.id,
+                            invQty: 1,
+                            optional: false,
+                        });
+                    } else {
+                        // refresh all mat dropdowns so new material appears
+                        document.querySelectorAll("#costLines .cl-mat").forEach((sel) => {
+                            const cur = sel.value ? parseInt(sel.value, 10) : null;
+                            const keep = cur || (attached ? mat.id : null);
+                            sel.innerHTML = materialOptionsHtml(keep);
+                        });
+                    }
+                    updatePreview();
+                    alert(
+                        "Stock tracking on: each sale of \u201c" +
+                            name +
+                            "\u201d will deduct 1 " +
+                            (mat.unit || "pcs") +
+                            " from material \u201c" +
+                            mat.name +
+                            "\u201d.\n\nSet starting qty on the Inventory tab.",
+                    );
+                });
                 document.getElementById("fPrice").addEventListener("input", updatePreview);
                 document.getElementById("fName").addEventListener("input", checkNameMatch);
                 // Do not close on overlay click — preserves typed data
@@ -2671,10 +2761,10 @@
                         let changed = false;
                         (order.items || []).forEach((it) => {
                             const linkedById = it.productId === productId;
-                            const linkedByName = !it.productId && (it.name || "").toLowerCase() === oldKey;
+                            const linkedByName = (it.name || "").toLowerCase() === oldKey;
                             if (linkedById || linkedByName) {
                                 it.name = newName;
-                                if (linkedById || linkedByName) it.productId = productId;
+                                it.productId = productId;
                                 lines++;
                                 changed = true;
                             }
@@ -2688,6 +2778,99 @@
                     }
 
                     return { lines, orders: touchedOrders.length };
+                }
+
+                async function syncPosPresetsAfterProductRename(oldName, newName, alsoSaleLines) {
+                    const oldKey = (oldName || "").toLowerCase().trim();
+                    const newKey = (newName || "").toLowerCase().trim();
+                    if (!oldKey || oldKey === newKey) return { presets: 0, saleLines: 0 };
+                    try {
+                        const pdb = await new Promise((resolve, reject) => {
+                            const req = indexedDB.open("littleLedgerDB");
+                            req.onsuccess = () => resolve(req.result);
+                            req.onerror = () => reject(req.error);
+                        });
+                        let presetsUpdated = 0;
+                        let saleLinesUpdated = 0;
+                        if (pdb.objectStoreNames.contains("presets")) {
+                            const presets = await new Promise((resolve, reject) => {
+                                const r = pdb.transaction("presets", "readonly").objectStore("presets").getAll();
+                                r.onsuccess = () => resolve(r.result || []);
+                                r.onerror = () => reject(r.error);
+                            });
+                            const toSave = presets.filter((p) => (p.name || "").toLowerCase().trim() === oldKey).map((p) => Object.assign({}, p, { name: newName }));
+                            if (toSave.length) {
+                                await new Promise((resolve, reject) => {
+                                    const txp = pdb.transaction("presets", "readwrite");
+                                    const store = txp.objectStore("presets");
+                                    toSave.forEach((p) => store.put(p));
+                                    txp.oncomplete = resolve;
+                                    txp.onerror = () => reject(txp.error);
+                                });
+                                presetsUpdated = toSave.length;
+                            }
+                        }
+                        if (alsoSaleLines && pdb.objectStoreNames.contains("transactions")) {
+                            const txs = await new Promise((resolve, reject) => {
+                                const r = pdb.transaction("transactions", "readonly").objectStore("transactions").getAll();
+                                r.onsuccess = () => resolve(r.result || []);
+                                r.onerror = () => reject(r.error);
+                            });
+                            const touched = [];
+                            for (const t of txs) {
+                                if (t.type !== "sale") continue;
+                                let changed = false;
+                                if ((t.item || "").toLowerCase().trim() === oldKey) {
+                                    t.item = newName;
+                                    changed = true;
+                                }
+                                (t.items || []).forEach((ln) => {
+                                    const n = (ln.item || ln.name || "").toLowerCase().trim();
+                                    if (n === oldKey) {
+                                        if (ln.item != null) ln.item = newName;
+                                        if (ln.name != null) ln.name = newName;
+                                        saleLinesUpdated++;
+                                        changed = true;
+                                    }
+                                });
+                                if (changed) touched.push(t);
+                            }
+                            if (touched.length) {
+                                await new Promise((resolve, reject) => {
+                                    const txp = pdb.transaction("transactions", "readwrite");
+                                    const store = txp.objectStore("transactions");
+                                    touched.forEach((t) => store.put(t));
+                                    txp.oncomplete = resolve;
+                                    txp.onerror = () => reject(txp.error);
+                                });
+                            }
+                        }
+                        return { presets: presetsUpdated, saleLines: saleLinesUpdated };
+                    } catch (err) {
+                        console.warn("[sync] POS rename skipped", err);
+                        return { presets: 0, saleLines: 0, error: err };
+                    }
+                }
+
+                async function countPosPresetLinks(oldName) {
+                    const oldKey = (oldName || "").toLowerCase().trim();
+                    if (!oldKey) return 0;
+                    try {
+                        const pdb = await new Promise((resolve, reject) => {
+                            const req = indexedDB.open("littleLedgerDB");
+                            req.onsuccess = () => resolve(req.result);
+                            req.onerror = () => reject(req.error);
+                        });
+                        if (!pdb.objectStoreNames.contains("presets")) return 0;
+                        const presets = await new Promise((resolve, reject) => {
+                            const r = pdb.transaction("presets", "readonly").objectStore("presets").getAll();
+                            r.onsuccess = () => resolve(r.result || []);
+                            r.onerror = () => reject(r.error);
+                        });
+                        return presets.filter((p) => (p.name || "").toLowerCase().trim() === oldKey).length;
+                    } catch (_) {
+                        return 0;
+                    }
                 }
 
                 function countOrderLinksForProduct(productId, productName) {
@@ -2764,18 +2947,14 @@
                         const isRename = oldName && oldName.toLowerCase() !== name.toLowerCase();
                         if (isRename) {
                             const links = countOrderLinksForProduct(editingId, oldName);
-                            if (links.lines > 0) {
-                                const ok = confirm(
-                                    `Rename “${oldName}” → “${name}”?\n\n` +
-                                        `This product is linked in ${links.lines} order line(s) across ${links.orders} order(s).\n` +
-                                        `Those order line names will be updated to keep data in sync.`,
-                                );
-                                if (!ok) return;
-                                renameSync = { oldName, newName: name, productId: editingId };
-                            } else {
-                                const ok = confirm(`Rename “${oldName}” → “${name}”?\n\nNo linked order lines found. Continue?`);
-                                if (!ok) return;
-                            }
+                            const posPresetCount = await countPosPresetLinks(oldName);
+                            const bits = [];
+                            if (links.lines > 0) bits.push(links.lines + " Costing order line(s) in " + links.orders + " order(s)");
+                            if (posPresetCount > 0) bits.push(posPresetCount + " POS quick preset(s)");
+                            const detail = bits.length ? bits.join(" and ") + " will be renamed to keep data in sync." : "No linked order lines or POS presets found.";
+                            const ok = confirm("Rename \u201c" + oldName + "\u201d \u2192 \u201c" + name + "\u201d?\n\n" + detail);
+                            if (!ok) return;
+                            renameSync = { oldName: oldName, newName: name, productId: editingId, syncPosSales: true };
                         }
                     } else {
                         product.createdAt = Date.now();
@@ -2794,8 +2973,13 @@
 
                     if (renameSync) {
                         const result = await syncOrdersAfterProductRename(renameSync.productId, renameSync.oldName, renameSync.newName);
-                        if (result.lines > 0) {
-                            alert(`Product renamed.\nSynced ${result.lines} order line(s) in ${result.orders} order(s).`);
+                        const posResult = await syncPosPresetsAfterProductRename(renameSync.oldName, renameSync.newName, !!renameSync.syncPosSales);
+                        const msgs = [];
+                        if (result.lines > 0) msgs.push(result.lines + " Costing order line(s) in " + result.orders + " order(s)");
+                        if (posResult.presets > 0) msgs.push(posResult.presets + " POS quick preset(s)");
+                        if (posResult.saleLines > 0) msgs.push(posResult.saleLines + " POS sale line(s)");
+                        if (msgs.length) {
+                            alert("Product renamed.\nSynced: " + msgs.join(", ") + ".");
                             renderOrders(document.getElementById("searchInput").value);
                             renderOrderSummary();
                         }
@@ -4167,6 +4351,9 @@
                         { name: "Photo Paper", unit: "sheet", startingQty: 0, reorderLevel: 50, costPerUnit: 4, notes: "" },
                         { name: "Ink — Black", unit: "ml", startingQty: 0, reorderLevel: 30, costPerUnit: 0.8, mlPerBottle: 100, notes: "track by ml" },
                         { name: "Ink — Color", unit: "ml", startingQty: 0, reorderLevel: 40, costPerUnit: 1.2, mlPerBottle: 70, notes: "CMY combined or per channel later" },
+                        { name: "Ballpen", unit: "pcs", startingQty: 0, reorderLevel: 12, costPerUnit: 6, notes: "School supply — 1 per sale" },
+                        { name: "Notebook", unit: "pcs", startingQty: 0, reorderLevel: 10, costPerUnit: 18, notes: "School supply — 1 per sale" },
+                        { name: "Pencil", unit: "pcs", startingQty: 0, reorderLevel: 12, costPerUnit: 5, notes: "School supply — 1 per sale" },
                     ];
                     for (const d of defaults) {
                         d.createdAt = Date.now();
