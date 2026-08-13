@@ -657,6 +657,46 @@
                 text-align: center;
                 padding: 24px 8px;
             }
+            .stock-trend-chart-wrap {
+                position: relative;
+            }
+            .stock-trend-chart {
+                cursor: crosshair;
+                touch-action: pan-y;
+            }
+            .stock-trend-readout {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 6px 14px;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px dashed var(--line);
+                min-height: 22px;
+                font-size: 0.78rem;
+            }
+            .stock-trend-readout .ro-date {
+                font-weight: 700;
+                color: var(--ink-soft);
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                font-size: 0.68rem;
+            }
+            .stock-trend-readout .ro-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+            .stock-trend-readout .ro-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                flex-shrink: 0;
+            }
+            .stock-trend-readout .ro-val {
+                font-family: "IBM Plex Mono", monospace;
+                font-weight: 600;
+            }
 
             .history-list {
                 list-style: none;
@@ -1358,7 +1398,10 @@
                     <p class="stock-trend-hint">Running quantity from starting stock + stock in/out. Tap a material in the legend to show or hide it.</p>
                     <div class="stock-trend-controls" id="stockTrendRanges"></div>
                     <div class="stock-trend-legend" id="stockTrendLegend"></div>
-                    <canvas class="stock-trend-chart" id="stockTrendChart" height="200"></canvas>
+                    <div class="stock-trend-chart-wrap">
+                        <canvas class="stock-trend-chart" id="stockTrendChart" height="200"></canvas>
+                    </div>
+                    <div class="stock-trend-readout" id="stockTrendReadout"></div>
                     <p class="stock-trend-empty" id="stockTrendEmpty" hidden>No stock movements yet — chart will appear after stock in/out or POS deductions.</p>
                 </div>
 
@@ -3975,8 +4018,18 @@
                     return points;
                 }
 
-                function drawStockTrendChart(canvas, seriesList) {
-                    if (!canvas) return;
+                function qtyAtTime(points, t) {
+                    if (!points || !points.length) return 0;
+                    let q = points[0].qty;
+                    for (const p of points) {
+                        if (p.date <= t) q = p.qty;
+                        else break;
+                    }
+                    return q;
+                }
+
+                function drawStockTrendChart(canvas, seriesList, hoverT) {
+                    if (!canvas) return null;
                     const ctx = canvas.getContext("2d");
                     const dpr = window.devicePixelRatio || 1;
                     const rect = canvas.getBoundingClientRect();
@@ -3992,7 +4045,7 @@
                     const plotH = h - pad.t - pad.b;
 
                     const allPts = seriesList.flatMap((s) => s.points);
-                    if (!allPts.length) return;
+                    if (!allPts.length) return null;
 
                     let minT = Math.min(...allPts.map((p) => p.date));
                     let maxT = Math.max(...allPts.map((p) => p.date));
@@ -4017,6 +4070,10 @@
                     function yAt(v) {
                         return pad.t + plotH - ((v - minV) / rangeV) * plotH;
                     }
+                    function tAt(x) {
+                        const frac = Math.min(1, Math.max(0, (x - pad.l) / plotW));
+                        return minT + frac * rangeT;
+                    }
 
                     // grid
                     ctx.strokeStyle = "rgba(28,26,23,0.08)";
@@ -4028,7 +4085,6 @@
                         ctx.lineTo(w - pad.r, y);
                         ctx.stroke();
                     }
-                    // zero line
                     if (minV < 0 && maxV > 0) {
                         const y0 = yAt(0);
                         ctx.strokeStyle = "rgba(28,26,23,0.2)";
@@ -4040,7 +4096,6 @@
                         ctx.setLineDash([]);
                     }
 
-                    // y labels
                     ctx.fillStyle = "#5b564c";
                     ctx.font = "10px IBM Plex Mono, monospace";
                     ctx.textAlign = "right";
@@ -4051,7 +4106,6 @@
                         ctx.fillText(label, pad.l - 4, y + 3);
                     }
 
-                    // series (step-ish: horizontal then vertical at each move for clearer stock levels)
                     seriesList.forEach((s) => {
                         const pts = s.points;
                         if (!pts.length) return;
@@ -4066,21 +4120,41 @@
                             const y = yAt(p.qty);
                             if (i === 0) ctx.moveTo(x, y);
                             else {
-                                // horizontal to new time at previous qty, then vertical
                                 const prev = pts[i - 1];
                                 ctx.lineTo(x, yAt(prev.qty));
                                 ctx.lineTo(x, y);
                             }
                         });
                         ctx.stroke();
-                        // end dot
                         const last = pts[pts.length - 1];
                         ctx.beginPath();
                         ctx.arc(xAt(last.date), yAt(last.qty), 3, 0, Math.PI * 2);
                         ctx.fill();
                     });
 
-                    // x labels first / last
+                    // hover guide
+                    if (hoverT != null && isFinite(hoverT)) {
+                        const hx = xAt(hoverT);
+                        ctx.strokeStyle = "rgba(28,26,23,0.35)";
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([3, 3]);
+                        ctx.beginPath();
+                        ctx.moveTo(hx, pad.t);
+                        ctx.lineTo(hx, pad.t + plotH);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        seriesList.forEach((s) => {
+                            const q = qtyAtTime(s.points, hoverT);
+                            ctx.fillStyle = s.color;
+                            ctx.beginPath();
+                            ctx.arc(hx, yAt(q), 4, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.strokeStyle = "#fbf8f2";
+                            ctx.lineWidth = 1.5;
+                            ctx.stroke();
+                        });
+                    }
+
                     ctx.fillStyle = "#5b564c";
                     ctx.font = "10px Inter, sans-serif";
                     ctx.textAlign = "left";
@@ -4091,6 +4165,64 @@
                     ctx.fillText(fmt(minT), pad.l, h - 6);
                     ctx.textAlign = "right";
                     ctx.fillText(fmt(maxT), w - pad.r, h - 6);
+
+                    return { minT, maxT, tAt, pad, w, h };
+                }
+
+                function updateStockTrendReadout(seriesList, t) {
+                    const el = document.getElementById("stockTrendReadout");
+                    if (!el) return;
+                    el.innerHTML = "";
+                    if (!seriesList || !seriesList.length) return;
+                    const useT = t != null ? t : seriesList[0].points[seriesList[0].points.length - 1].date;
+                    const d = new Date(useT);
+                    const dateLabel = d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                    const dateSpan = document.createElement("span");
+                    dateSpan.className = "ro-date";
+                    dateSpan.textContent = dateLabel;
+                    el.appendChild(dateSpan);
+                    seriesList.forEach((s) => {
+                        const q = qtyAtTime(s.points, useT);
+                        const item = document.createElement("span");
+                        item.className = "ro-item";
+                        item.innerHTML = `<span class="ro-dot" style="background:${s.color}"></span><span>${escapeHtml(s.name)}</span> <span class="ro-val">${fmtNum(q)}</span>`;
+                        el.appendChild(item);
+                    });
+                }
+
+                function bindStockTrendHover(canvas, seriesList, meta) {
+                    if (!canvas || !meta) return;
+                    // replace listeners by cloning node to avoid stacking
+                    const fresh = canvas.cloneNode(false);
+                    fresh.id = "stockTrendChart";
+                    canvas.parentNode.replaceChild(fresh, canvas);
+                    fresh.width = canvas.width;
+                    fresh.height = canvas.height;
+                    // redraw once on fresh canvas
+                    const m = drawStockTrendChart(fresh, seriesList, null);
+                    updateStockTrendReadout(seriesList, null);
+
+                    const redraw = (hoverT) => {
+                        drawStockTrendChart(fresh, seriesList, hoverT);
+                        updateStockTrendReadout(seriesList, hoverT);
+                    };
+
+                    const fromEvent = (e) => {
+                        const rect = fresh.getBoundingClientRect();
+                        const clientX = e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX;
+                        const x = clientX - rect.left;
+                        return m.tAt(x);
+                    };
+
+                    fresh.addEventListener("pointermove", (e) => {
+                        redraw(fromEvent(e));
+                    });
+                    fresh.addEventListener("pointerdown", (e) => {
+                        redraw(fromEvent(e));
+                    });
+                    fresh.addEventListener("pointerleave", () => {
+                        redraw(null);
+                    });
                 }
 
                 function renderStockTrend() {
@@ -4098,6 +4230,7 @@
                     const legendEl = document.getElementById("stockTrendLegend");
                     const canvas = document.getElementById("stockTrendChart");
                     const empty = document.getElementById("stockTrendEmpty");
+                    const readout = document.getElementById("stockTrendReadout");
                     if (!rangesEl || !legendEl || !canvas || !empty) return;
 
                     rangesEl.innerHTML = "";
@@ -4120,7 +4253,6 @@
 
                     const mats = state.materials.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
                     const hidden = new Set(state.stockTrendHidden || []);
-                    // Default: show up to 6 materials that have moves; others start hidden
                     if (!state._stockTrendInit && mats.length) {
                         const withMoves = mats.filter((m) => state.stockMoves.some((mv) => mv.materialId === m.id));
                         const prefer = (withMoves.length ? withMoves : mats).slice(0, 6).map((m) => m.id);
@@ -4154,7 +4286,6 @@
                     mats.forEach((mat, idx) => {
                         if (hidden.has(mat.id)) return;
                         const points = materialStockSeries(mat, rangeStart);
-                        // Skip flat-zero with no moves in range unless only one material shown
                         seriesList.push({
                             id: mat.id,
                             name: mat.name,
@@ -4163,8 +4294,8 @@
                         });
                     });
 
-                    const hasActivity = state.stockMoves.length > 0 || mats.some((m) => Number(m.startingQty) > 0);
-                    empty.hidden = hasActivity && seriesList.length > 0;
+                    if (readout) readout.innerHTML = "";
+
                     if (!seriesList.length) {
                         empty.hidden = false;
                         empty.textContent = mats.length ? "Tap materials in the legend to show them on the chart." : "No materials yet.";
@@ -4178,9 +4309,14 @@
                         return;
                     }
                     empty.hidden = true;
-                    requestAnimationFrame(() => drawStockTrendChart(canvas, seriesList));
+                    requestAnimationFrame(() => {
+                        const meta = drawStockTrendChart(canvas, seriesList, null);
+                        updateStockTrendReadout(seriesList, null);
+                        bindStockTrendHover(canvas, seriesList, meta);
+                    });
                 }
 
+                // ---------- Inventory ----------
                 // ---------- Inventory ----------
                 function materialCurrentQty(mat) {
                     let qty = Number(mat.startingQty) || 0;
