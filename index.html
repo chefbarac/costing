@@ -1352,10 +1352,10 @@
                     <button id="addProductBtn" class="btn-primary">+ Add product</button>
                     <div class="stat-chips">
                         <div class="chip">Items<b id="chipCount" class="mono">0</b></div>
-                        <div class="chip">Total cost<b id="chipCost" class="mono priv-value amt">—</b></div>
-                        <div class="chip">Potential revenue<b id="chipRevenue" class="mono priv-value amt">—</b></div>
-                        <div class="chip">Potential profit<b id="chipProfit" class="mono priv-value amt">—</b></div>
-                        <div class="chip">Avg margin<b id="chipMargin" class="mono priv-value pct">—</b></div>
+                        <div class="chip" title="Sellable units from inventory × product cost">Total cost<b id="chipCost" class="mono priv-value amt">—</b></div>
+                        <div class="chip" title="Sellable units from inventory × selling price">Potential revenue<b id="chipRevenue" class="mono priv-value amt">—</b></div>
+                        <div class="chip" title="Potential revenue − total cost">Potential profit<b id="chipProfit" class="mono priv-value amt">—</b></div>
+                        <div class="chip" title="Weighted average margin on sellable units">Avg margin<b id="chipMargin" class="mono priv-value pct">—</b></div>
                     </div>
                 </section>
                 <section id="productList" class="product-list"></section>
@@ -1389,8 +1389,7 @@
                     <div class="stat-chips">
                         <div class="chip">Materials<b id="invCount" class="mono">0</b></div>
                         <div class="chip">Low stock<b id="invLow" class="mono">0</b></div>
-                        <div class="chip" title="From products list: sellable units × product cost">Inv @ cost<b id="invValueCost" class="mono priv-value amt">—</b></div>
-                        <div class="chip" title="From products list: sellable units × selling price">Inv @ sell<b id="invValueSell" class="mono priv-value amt">—</b></div>
+                        <div class="chip" title="Material stock × cost per unit">Inv. value (cost)<b id="invValue" class="mono priv-value amt">—</b></div>
                     </div>
                 </section>
 
@@ -1432,8 +1431,7 @@
                     </button>
                     <div class="collapse-body">
                         <p class="collapse-hint">
-                            Reads Little Ledger IndexedDB on this same domain (no export). Shows only POS sales not yet recorded in inventory so you can clean them up one by one. POS writes stock-outs
-                            automatically on new sales when product names match.
+                            Reads Little Ledger IndexedDB on this same domain (no export). Shows only POS sales not yet recorded in inventory so you can clean them up one by one. POS writes stock-outs automatically on new sales when product names match.
                         </p>
                         <section class="add-bar" style="margin-bottom: 10px">
                             <button type="button" id="refreshPosConsolidate" class="btn-secondary">Refresh from POS DB</button>
@@ -1473,6 +1471,7 @@
                         <option value="Photocopy / Documents"></option>
                         <option value="Lamination"></option>
                         <option value="Binding"></option>
+                        <option value="Supplies"></option>
                         <option value="T-Shirt Printing"></option>
                         <option value="Mugs / Tumblers"></option>
                         <option value="Stickers"></option>
@@ -1703,7 +1702,7 @@
                 <label>
                     Cost per unit (₱)
                     <input id="mCost" type="number" step="any" min="0" placeholder="e.g. 0.80 per ml ink, or 2.50 per pouch" />
-                    <span style="font-size: 0.72rem; color: var(--ink-soft); font-weight: 500">For ink, enter ₱ per ml. Product lines use inv qty × this rate (e.g. 0.0133 ml × ₱0.80).</span>
+                    <span style="font-size:0.72rem;color:var(--ink-soft);font-weight:500">For ink, enter ₱ per ml. Product lines use inv qty × this rate (e.g. 0.0133 ml × ₱0.80).</span>
                 </label>
                 <label id="mBottleWrap" style="display: none">
                     ml per bottle (ink yield)
@@ -2305,19 +2304,75 @@
                 });
 
                 // ---------- Product rendering ----------
+                /**
+                 * Sellable units per product from current material stock.
+                 * Shared materials allocated A→Z by product name (remaining stock).
+                 * Optional recipe lines ignored. Whole units when all invQty are integers ≥ 1.
+                 */
+                function computeSellableUnitsByProduct() {
+                    const remaining = {};
+                    state.materials.forEach((m) => {
+                        remaining[m.id] = materialCurrentQty(m);
+                    });
+                    const unitsById = {};
+                    const products = state.products.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                    products.forEach((p) => {
+                        const lines = recipeFromProduct(p).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0);
+                        if (!lines.length) {
+                            unitsById[p.id] = 0;
+                            return;
+                        }
+                        let units = Infinity;
+                        for (const ln of lines) {
+                            const have = remaining[ln.materialId] != null ? remaining[ln.materialId] : 0;
+                            const need = Number(ln.qty) || 0;
+                            if (need <= 0) continue;
+                            units = Math.min(units, have / need);
+                        }
+                        if (!isFinite(units) || units <= 0) {
+                            unitsById[p.id] = 0;
+                            return;
+                        }
+                        const allWhole = lines.every((ln) => Number.isInteger(Number(ln.qty)) && Number(ln.qty) >= 1);
+                        if (allWhole) units = Math.floor(units);
+                        if (units <= 0) {
+                            unitsById[p.id] = 0;
+                            return;
+                        }
+                        unitsById[p.id] = units;
+                        lines.forEach((ln) => {
+                            remaining[ln.materialId] = (remaining[ln.materialId] || 0) - units * (Number(ln.qty) || 0);
+                        });
+                    });
+                    return unitsById;
+                }
+
                 function renderSummary() {
-                    const totals = state.products.map(computeTotals);
                     const count = state.products.length;
-                    const totalCost = totals.reduce((s, t) => s + t.totalCost, 0);
-                    const totalRevenue = totals.reduce((s, t) => s + t.price, 0);
-                    const totalProfit = totals.reduce((s, t) => s + t.profit, 0);
-                    const avgMargin = count ? totals.reduce((s, t) => s + (isFinite(t.margin) ? t.margin : 0), 0) / count : 0;
+                    const unitsById = typeof materialCurrentQty === "function" ? computeSellableUnitsByProduct() : {};
+                    let totalCost = 0;
+                    let totalRevenue = 0;
+                    let marginWeighted = 0;
+                    let unitsSum = 0;
+
+                    state.products.forEach((p) => {
+                        const t = computeTotals(p);
+                        const units = unitsById[p.id] != null ? unitsById[p.id] : 0;
+                        totalCost += units * (t.totalCost || 0);
+                        totalRevenue += units * (Number(p.sellingPrice) || 0);
+                        if (units > 0 && isFinite(t.margin)) {
+                            marginWeighted += t.margin * units;
+                            unitsSum += units;
+                        }
+                    });
+                    const totalProfit = totalRevenue - totalCost;
+                    const avgMargin = unitsSum ? marginWeighted / unitsSum : 0;
 
                     document.getElementById("chipCount").textContent = count;
                     document.getElementById("chipCost").textContent = fmtMoney(totalCost);
                     document.getElementById("chipRevenue").textContent = fmtMoney(totalRevenue);
                     document.getElementById("chipProfit").textContent = fmtMoney(totalProfit);
-                    document.getElementById("chipMargin").textContent = count ? fmtPct(avgMargin) : "—";
+                    document.getElementById("chipMargin").textContent = unitsSum ? fmtPct(avgMargin) : "—";
                 }
 
                 function sortProductsInPlace() {
@@ -4299,7 +4354,9 @@
 
                     if (!seriesList.length) {
                         empty.hidden = false;
-                        empty.textContent = mats.length ? "Tap materials in the legend to show them on the chart." : "No materials yet.";
+                        empty.textContent = mats.length
+                            ? "Tap materials in the legend to show them on the chart."
+                            : "No materials yet.";
                         const ctx = canvas.getContext("2d");
                         const dpr = window.devicePixelRatio || 1;
                         const rect = canvas.getBoundingClientRect();
@@ -4333,57 +4390,6 @@
                  * Estimate how many units of a product current material stock can still make/sell.
                  * Uses non-optional recipe lines only (bottleneck = min of available / invQty).
                  */
-                function productSellableUnits(product, qtyByMaterialId) {
-                    const lines = recipeFromProduct(product).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0);
-                    if (!lines.length) return 0;
-                    let units = Infinity;
-                    for (const ln of lines) {
-                        const have = qtyByMaterialId[ln.materialId] != null ? qtyByMaterialId[ln.materialId] : 0;
-                        const need = Number(ln.qty) || 0;
-                        if (need <= 0) continue;
-                        units = Math.min(units, have / need);
-                    }
-                    if (!isFinite(units) || units < 0) return 0;
-                    return units;
-                }
-
-                /** Inventory value from products list: sellable units × cost / selling price. */
-                function computeProductInventoryValues() {
-                    const qtyByMaterialId = {};
-                    state.materials.forEach((m) => {
-                        qtyByMaterialId[m.id] = materialCurrentQty(m);
-                    });
-                    // Consume stock across products in name order so multi-product sharing is approximate not double-counted
-                    const remaining = Object.assign({}, qtyByMaterialId);
-                    let valueCost = 0;
-                    let valueSell = 0;
-                    const products = state.products.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-                    products.forEach((p) => {
-                        const lines = recipeFromProduct(p).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0);
-                        if (!lines.length) return;
-                        let units = Infinity;
-                        for (const ln of lines) {
-                            const have = remaining[ln.materialId] != null ? remaining[ln.materialId] : 0;
-                            const need = Number(ln.qty) || 0;
-                            if (need <= 0) continue;
-                            units = Math.min(units, have / need);
-                        }
-                        if (!isFinite(units) || units <= 0) return;
-                        // Use whole units for discrete goods; keep fractional for continuous (ink-heavy) — floor only when all invQty are integers >= 1
-                        const allWhole = lines.every((ln) => Number.isInteger(Number(ln.qty)) && Number(ln.qty) >= 1);
-                        if (allWhole) units = Math.floor(units);
-                        if (units <= 0) return;
-                        const t = computeTotals(p);
-                        valueCost += units * (t.totalCost || 0);
-                        valueSell += units * (Number(p.sellingPrice) || 0);
-                        // allocate consumed materials so shared stock isn't counted twice
-                        lines.forEach((ln) => {
-                            remaining[ln.materialId] = (remaining[ln.materialId] || 0) - units * (Number(ln.qty) || 0);
-                        });
-                    });
-                    return { valueCost, valueSell };
-                }
-
                 function renderInventory(filterText) {
                     const q = (filterText || "").trim().toLowerCase();
                     const list = document.getElementById("materialList");
@@ -4445,15 +4451,18 @@
 
                     document.getElementById("invCount").textContent = String(state.materials.length);
                     document.getElementById("invLow").textContent = String(low);
-                    const invVals = computeProductInventoryValues();
-                    const costEl = document.getElementById("invValueCost");
-                    const sellEl = document.getElementById("invValueSell");
-                    if (costEl) costEl.textContent = fmtMoney(invVals.valueCost);
-                    if (sellEl) sellEl.textContent = fmtMoney(invVals.valueSell);
+                    // Material stock × cost only (products potential is on Products tab)
+                    let matValue = 0;
+                    state.materials.forEach((mat) => {
+                        matValue += materialCurrentQty(mat) * (Number(mat.costPerUnit) || 0);
+                    });
+                    const invEl = document.getElementById("invValue");
+                    if (invEl) {
+                        invEl.textContent = fmtMoney(matValue);
+                        bindPeek(invEl);
+                    }
                     document.getElementById("emptyMaterials").hidden = state.materials.length > 0;
                     list.querySelectorAll(".priv-value").forEach(bindPeek);
-                    if (costEl) bindPeek(costEl);
-                    if (sellEl) bindPeek(sellEl);
 
                     renderStockTrend();
                     renderRecipes();
@@ -4586,7 +4595,9 @@
                     if (propagated > 0) {
                         renderList(document.getElementById("searchInput").value);
                         renderSummary();
-                        alert(`Material cost saved. Updated cost on ${propagated} product${propagated === 1 ? "" : "s"} (inv qty × ₱/unit) and added cost-history points.`);
+                        alert(
+                            `Material cost saved. Updated cost on ${propagated} product${propagated === 1 ? "" : "s"} (inv qty × ₱/unit) and added cost-history points.`,
+                        );
                     }
                 });
 
@@ -4895,7 +4906,9 @@
                     clearBtn.style.display = "";
 
                     // Only unrecorded sales — already-applied ones are filtered out on load and after apply
-                    const sales = state.posSales.filter((t) => t.type === "sale" && !isSaleRecordedInInventory(t)).sort((a, b) => new Date(b.date) - new Date(a.date));
+                    const sales = state.posSales
+                        .filter((t) => t.type === "sale" && !isSaleRecordedInInventory(t))
+                        .sort((a, b) => new Date(b.date) - new Date(a.date));
                     let noRecipe = 0;
 
                     if (!sales.length) {
