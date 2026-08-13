@@ -1431,7 +1431,8 @@
                     </button>
                     <div class="collapse-body">
                         <p class="collapse-hint">
-                            Reads Little Ledger IndexedDB on this same domain (no export). Shows only POS sales not yet recorded in inventory so you can clean them up one by one. POS writes stock-outs automatically on new sales when product names match.
+                            Reads Little Ledger IndexedDB on this same domain (no export). Shows only POS sales not yet recorded in inventory so you can clean them up one by one. POS writes stock-outs
+                            automatically on new sales when product names match.
                         </p>
                         <section class="add-bar" style="margin-bottom: 10px">
                             <button type="button" id="refreshPosConsolidate" class="btn-secondary">Refresh from POS DB</button>
@@ -1702,7 +1703,7 @@
                 <label>
                     Cost per unit (₱)
                     <input id="mCost" type="number" step="any" min="0" placeholder="e.g. 0.80 per ml ink, or 2.50 per pouch" />
-                    <span style="font-size:0.72rem;color:var(--ink-soft);font-weight:500">For ink, enter ₱ per ml. Product lines use inv qty × this rate (e.g. 0.0133 ml × ₱0.80).</span>
+                    <span style="font-size: 0.72rem; color: var(--ink-soft); font-weight: 500">For ink, enter ₱ per ml. Product lines use inv qty × this rate (e.g. 0.0133 ml × ₱0.80).</span>
                 </label>
                 <label id="mBottleWrap" style="display: none">
                     ml per bottle (ink yield)
@@ -2349,7 +2350,15 @@
 
                 function renderSummary() {
                     const count = state.products.length;
-                    const unitsById = typeof materialCurrentQty === "function" ? computeSellableUnitsByProduct() : {};
+                    let unitsById = {};
+                    try {
+                        if (typeof materialCurrentQty === "function" && typeof recipeFromProduct === "function") {
+                            unitsById = computeSellableUnitsByProduct();
+                        }
+                    } catch (err) {
+                        console.warn("[summary] sellable units failed", err);
+                        unitsById = {};
+                    }
                     let totalCost = 0;
                     let totalRevenue = 0;
                     let marginWeighted = 0;
@@ -2357,7 +2366,15 @@
 
                     state.products.forEach((p) => {
                         const t = computeTotals(p);
-                        const units = unitsById[p.id] != null ? unitsById[p.id] : 0;
+                        const lines = typeof recipeFromProduct === "function" ? recipeFromProduct(p).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0) : [];
+                        // Recipe linked to materials → units from inventory stock (may be 0).
+                        // No inventory recipe → count 1 unit so list prices still roll up.
+                        let units;
+                        if (lines.length) {
+                            units = unitsById[p.id] != null ? Number(unitsById[p.id]) || 0 : 0;
+                        } else {
+                            units = 1;
+                        }
                         totalCost += units * (t.totalCost || 0);
                         totalRevenue += units * (Number(p.sellingPrice) || 0);
                         if (units > 0 && isFinite(t.margin)) {
@@ -2368,11 +2385,18 @@
                     const totalProfit = totalRevenue - totalCost;
                     const avgMargin = unitsSum ? marginWeighted / unitsSum : 0;
 
+                    const costEl = document.getElementById("chipCost");
+                    const revEl = document.getElementById("chipRevenue");
+                    const profitEl = document.getElementById("chipProfit");
+                    const marginEl = document.getElementById("chipMargin");
                     document.getElementById("chipCount").textContent = count;
-                    document.getElementById("chipCost").textContent = fmtMoney(totalCost);
-                    document.getElementById("chipRevenue").textContent = fmtMoney(totalRevenue);
-                    document.getElementById("chipProfit").textContent = fmtMoney(totalProfit);
-                    document.getElementById("chipMargin").textContent = unitsSum ? fmtPct(avgMargin) : "—";
+                    if (costEl) costEl.textContent = fmtMoney(totalCost);
+                    if (revEl) revEl.textContent = fmtMoney(totalRevenue);
+                    if (profitEl) profitEl.textContent = fmtMoney(totalProfit);
+                    if (marginEl) marginEl.textContent = unitsSum ? fmtPct(avgMargin) : "—";
+                    [costEl, revEl, profitEl, marginEl].forEach((el) => {
+                        if (el && el.classList.contains("priv-value")) bindPeek(el);
+                    });
                 }
 
                 function sortProductsInPlace() {
@@ -4354,9 +4378,7 @@
 
                     if (!seriesList.length) {
                         empty.hidden = false;
-                        empty.textContent = mats.length
-                            ? "Tap materials in the legend to show them on the chart."
-                            : "No materials yet.";
+                        empty.textContent = mats.length ? "Tap materials in the legend to show them on the chart." : "No materials yet.";
                         const ctx = canvas.getContext("2d");
                         const dpr = window.devicePixelRatio || 1;
                         const rect = canvas.getBoundingClientRect();
@@ -4592,12 +4614,11 @@
 
                     closeMaterialForm();
                     renderInventory(document.getElementById("searchInput").value);
+                    renderSummary();
                     if (propagated > 0) {
                         renderList(document.getElementById("searchInput").value);
                         renderSummary();
-                        alert(
-                            `Material cost saved. Updated cost on ${propagated} product${propagated === 1 ? "" : "s"} (inv qty × ₱/unit) and added cost-history points.`,
-                        );
+                        alert(`Material cost saved. Updated cost on ${propagated} product${propagated === 1 ? "" : "s"} (inv qty × ₱/unit) and added cost-history points.`);
                     }
                 });
 
@@ -4646,6 +4667,7 @@
                     state.stockMoves.push(move);
                     closeStockMoveForm();
                     renderInventory(document.getElementById("searchInput").value);
+                    renderSummary();
                 });
 
                 function openRecipeForm(productId) {
@@ -4863,6 +4885,7 @@
                     }
                     document.getElementById("applyUsageModal").hidden = true;
                     renderInventory(document.getElementById("searchInput").value);
+                    renderSummary();
                 });
 
                 // ---------- POS consolidation (one-way check, no live link) ----------
@@ -4906,9 +4929,7 @@
                     clearBtn.style.display = "";
 
                     // Only unrecorded sales — already-applied ones are filtered out on load and after apply
-                    const sales = state.posSales
-                        .filter((t) => t.type === "sale" && !isSaleRecordedInInventory(t))
-                        .sort((a, b) => new Date(b.date) - new Date(a.date));
+                    const sales = state.posSales.filter((t) => t.type === "sale" && !isSaleRecordedInInventory(t)).sort((a, b) => new Date(b.date) - new Date(a.date));
                     let noRecipe = 0;
 
                     if (!sales.length) {
