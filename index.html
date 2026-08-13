@@ -513,6 +513,59 @@
                 color: var(--ink-soft);
             }
 
+            .collapsible-section {
+                margin-top: 28px;
+                border: 1px solid var(--line);
+                border-radius: var(--radius);
+                background: var(--card);
+                overflow: hidden;
+            }
+            .collapsible-section + .collapsible-section {
+                margin-top: 16px;
+            }
+            .collapse-toggle {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 14px;
+                background: transparent;
+                border: none;
+                text-align: left;
+                cursor: pointer;
+                color: var(--ink);
+                font-family: "Space Grotesk", sans-serif;
+                font-size: 0.78rem;
+                font-weight: 700;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+            .collapse-toggle:hover {
+                background: rgba(28, 26, 23, 0.04);
+            }
+            .collapse-chevron {
+                display: inline-block;
+                width: 1em;
+                transition: transform 0.15s ease;
+                color: var(--ink-soft);
+                font-size: 0.85rem;
+            }
+            .collapsible-section:not(.open) .collapse-chevron {
+                transform: rotate(-90deg);
+            }
+            .collapse-body {
+                display: none;
+                padding: 0 14px 14px;
+                border-top: 1px dashed var(--line);
+            }
+            .collapsible-section.open .collapse-body {
+                display: block;
+            }
+            .collapse-hint {
+                font-size: 0.8rem;
+                color: var(--ink-soft);
+                margin: 10px 0 12px;
+            }
             .history-section {
                 margin-top: 12px;
             }
@@ -1229,28 +1282,37 @@
                     No materials yet. Add laminating film (A4 pouch), bond paper, photo paper, ink (ml), etc. Then set recipes on products so each sale knows what it consumes.
                 </p>
 
-                <div class="section-title" style="margin-top: 28px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700">
-                    Recipes from cost breakdown
+                <div class="collapsible-section open" id="recipesSection">
+                    <button type="button" class="collapse-toggle" data-collapse="recipesSection" aria-expanded="true">
+                        <span class="collapse-chevron">▼</span>
+                        <span>Recipes from cost breakdown</span>
+                    </button>
+                    <div class="collapse-body">
+                        <p class="collapse-hint">
+                            Products that link materials + inv qty in their cost breakdown. Edit the product to change the recipe. Optional lines = free extras (e.g. free print with laminate).
+                        </p>
+                        <section id="recipeList" class="product-list"></section>
+                        <p id="emptyRecipes" class="empty-state" hidden style="padding: 20px">No material links yet. Edit a product → cost breakdown → choose material and inv qty.</p>
+                    </div>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--ink-soft); margin: 6px 0 12px">
-                    Products that link materials + inv qty in their cost breakdown. Edit the product to change the recipe. Optional lines = free extras (e.g. free print with laminate).
-                </p>
-                <section id="recipeList" class="product-list"></section>
-                <p id="emptyRecipes" class="empty-state" hidden style="padding: 20px">No material links yet. Edit a product → cost breakdown → choose material and inv qty.</p>
 
-                <div class="section-title" style="margin-top: 28px; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); font-weight: 700">
-                    POS consolidation
+                <div class="collapsible-section" id="posConsolidateSection">
+                    <button type="button" class="collapse-toggle" data-collapse="posConsolidateSection" aria-expanded="false">
+                        <span class="collapse-chevron">▼</span>
+                        <span>POS consolidation</span>
+                    </button>
+                    <div class="collapse-body">
+                        <p class="collapse-hint">
+                            Reads Little Ledger IndexedDB on this same domain (no export). Shows only POS sales not yet recorded in inventory so you can clean them up one by one. POS writes stock-outs automatically on new sales when product names match.
+                        </p>
+                        <section class="add-bar" style="margin-bottom: 10px">
+                            <button type="button" id="refreshPosConsolidate" class="btn-secondary">Refresh from POS DB</button>
+                            <button type="button" id="clearPosConsolidate" class="btn-secondary btn-sm" style="display: none">Clear</button>
+                        </section>
+                        <section id="posConsolidateList" class="product-list"></section>
+                        <p id="emptyPosConsolidate" class="empty-state" style="padding: 16px">Click “Refresh from POS DB” to load unrecorded sales from Little Ledger on this domain.</p>
+                    </div>
                 </div>
-                <p style="font-size: 0.8rem; color: var(--ink-soft); margin: 6px 0 12px">
-                    Reads Little Ledger IndexedDB on this same domain (no export). Shows which POS sales are not yet in inventory stock-outs. POS writes stock-outs here automatically on sale when
-                    product names match.
-                </p>
-                <section class="add-bar" style="margin-bottom: 10px">
-                    <button type="button" id="refreshPosConsolidate" class="btn-secondary">Refresh from POS DB</button>
-                    <button type="button" id="clearPosConsolidate" class="btn-secondary btn-sm" style="display: none">Clear</button>
-                </section>
-                <section id="posConsolidateList" class="product-list"></section>
-                <p id="emptyPosConsolidate" class="empty-state" style="padding: 16px">Click “Refresh from POS DB” to load sales from Little Ledger on this domain.</p>
             </div>
 
             <p class="hint">Tip: press <strong>P</strong> anytime to quickly toggle privacy mode. Tap a masked number to peek at it for a few seconds.</p>
@@ -1510,7 +1572,8 @@
                 </div>
                 <label>
                     Cost per unit (₱)
-                    <input id="mCost" type="number" step="0.01" min="0" placeholder="e.g. 2.50 for film pouch" />
+                    <input id="mCost" type="number" step="any" min="0" placeholder="e.g. 0.80 per ml ink, or 2.50 per pouch" />
+                    <span style="font-size:0.72rem;color:var(--ink-soft);font-weight:500">For ink, enter ₱ per ml. Product lines use inv qty × this rate (e.g. 0.0133 ml × ₱0.80).</span>
                 </label>
                 <label id="mBottleWrap" style="display: none">
                     ml per bottle (ink yield)
@@ -1734,7 +1797,10 @@
                 function fmtMoney(n) {
                     const c = state.settings.currency || "₱";
                     const v = Number(n) || 0;
-                    return c + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    // Show extra precision for tiny unit costs (e.g. ink at 0.0133 ml × rate)
+                    const abs = Math.abs(v);
+                    const maxFrac = abs > 0 && abs < 0.01 ? 4 : abs > 0 && abs < 1 ? 3 : 2;
+                    return c + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: maxFrac });
                 }
 
                 function fmtPct(n) {
@@ -1858,7 +1924,8 @@
                     const newCost = computeTotals(product).totalCost;
                     const last = product.priceHistory[product.priceHistory.length - 1];
                     const priceSame = last && Math.abs(last.price - newPrice) < 0.001;
-                    const costSame = last && Math.abs((last.cost || 0) - newCost) < 0.001;
+                    // Tight cost epsilon so fractional ink updates (e.g. 0.0133 ml × rate) still log
+                    const costSame = last && Math.abs((last.cost || 0) - newCost) < 1e-6;
                     // Skip only when both price and cost are unchanged
                     if (priceSame && costSame) return;
 
@@ -2527,9 +2594,9 @@
                     row.style.flexWrap = "wrap";
                     row.innerHTML = `
       <input type="text" class="cl-label" placeholder="e.g. Ink, paper, film" value="${escapeHtml(label)}" style="flex:1 1 120px">
-      <input type="number" class="cl-amount" step="0.01" min="0" placeholder="₱ cost" value="${amount !== undefined && amount !== "" && amount != null ? amount : ""}" style="flex:0 1 88px" title="Cost amount (₱)">
+      <input type="number" class="cl-amount" step="any" min="0" placeholder="₱ cost" value="${amount !== undefined && amount !== "" && amount != null ? amount : ""}" style="flex:0 1 88px" title="Cost amount (₱) — auto-fills from material × inv qty">
       <select class="cl-mat" style="flex:1 1 130px" title="Inventory material">${materialOptionsHtml(materialId)}</select>
-      <input type="number" class="cl-invqty" step="any" min="0" placeholder="Inv qty" value="${invQty != null && invQty !== "" ? invQty : ""}" style="flex:0 1 72px" title="Material qty consumed per 1 unit sold">
+      <input type="number" class="cl-invqty" step="any" min="0" placeholder="Inv qty" value="${invQty != null && invQty !== "" ? invQty : ""}" style="flex:0 1 72px" title="Material qty per unit sold (e.g. 0.0133 ml ink)">
       <label class="checkbox-row" style="flex:0 0 auto;font-size:0.72rem;gap:3px;white-space:nowrap" title="Optional: only deduct when included on Apply usage">
         <input type="checkbox" class="cl-opt" ${optional ? "checked" : ""} /> opt
       </label>
@@ -2539,8 +2606,17 @@
                         row.remove();
                         updatePreview();
                     });
-                    row.querySelectorAll("input, select").forEach((inp) => inp.addEventListener("input", updatePreview));
-                    row.querySelectorAll("input, select").forEach((inp) => inp.addEventListener("change", updatePreview));
+                    const onLineChange = (e) => {
+                        const t = e.target;
+                        if (t && (t.classList.contains("cl-mat") || t.classList.contains("cl-invqty"))) {
+                            autofillCostLineAmount(row);
+                        }
+                        updatePreview();
+                    };
+                    row.querySelectorAll("input, select").forEach((inp) => {
+                        inp.addEventListener("input", onLineChange);
+                        inp.addEventListener("change", onLineChange);
+                    });
                     costLinesEl.appendChild(row);
                 }
 
@@ -2571,6 +2647,65 @@
                             optional: !!c.optional,
                             label: c.label,
                         }));
+                }
+
+                /** ₱ amount for one product unit from material cost × inv qty (supports fractional ml like 0.0133). */
+                function amountFromMaterialQty(costPerUnit, invQty) {
+                    const c = Number(costPerUnit);
+                    const q = Number(invQty);
+                    if (!isFinite(c) || !isFinite(q) || q <= 0) return null;
+                    // Keep up to 6 decimal places so tiny ink usage stays meaningful before money rounding
+                    return Math.round(c * q * 1e6) / 1e6;
+                }
+
+                /** When material or inv qty changes on a cost row, fill ₱ from inventory rate. */
+                function autofillCostLineAmount(row) {
+                    if (!row) return;
+                    const matSel = row.querySelector(".cl-mat");
+                    const invInp = row.querySelector(".cl-invqty");
+                    const amtInp = row.querySelector(".cl-amount");
+                    if (!matSel || !invInp || !amtInp) return;
+                    const materialId = matSel.value ? parseInt(matSel.value, 10) : null;
+                    const invQty = invInp.value !== "" ? parseFloat(invInp.value) : null;
+                    if (!materialId || invQty == null || !isFinite(invQty) || invQty <= 0) return;
+                    const mat = state.materials.find((m) => m.id === materialId);
+                    if (!mat) return;
+                    const amt = amountFromMaterialQty(mat.costPerUnit, invQty);
+                    if (amt == null) return;
+                    amtInp.value = String(amt);
+                }
+
+                /**
+                 * Propagate a material costPerUnit change into every product cost line that links this material + inv qty.
+                 * Writes priceHistory cost points so the trend chart reflects inventory cost updates.
+                 * Returns number of products updated.
+                 */
+                async function propagateMaterialCostToProducts(materialId, matName) {
+                    if (!materialId) return 0;
+                    const mat = state.materials.find((m) => m.id === materialId);
+                    if (!mat) return 0;
+                    let updated = 0;
+                    for (const product of state.products) {
+                        const items = product.costItems || [];
+                        let changed = false;
+                        const nextItems = items.map((c) => {
+                            if (c.materialId !== materialId) return c;
+                            if (c.invQty == null || !(Number(c.invQty) > 0)) return c;
+                            const amt = amountFromMaterialQty(mat.costPerUnit, c.invQty);
+                            if (amt == null) return c;
+                            if (Math.abs((Number(c.amount) || 0) - amt) < 1e-9) return c;
+                            changed = true;
+                            return Object.assign({}, c, { amount: amt });
+                        });
+                        if (!changed) continue;
+                        product.costItems = nextItems;
+                        product.updatedAt = Date.now();
+                        const price = Number(product.sellingPrice) || 0;
+                        recordPriceHistory(product, price, price, "Material cost: " + (matName || mat.name || "material"));
+                        await dbPut("products", product);
+                        updated++;
+                    }
+                    return updated;
                 }
 
                 function updatePreview() {
@@ -3873,12 +4008,18 @@
                         return;
                     }
                     const unit = document.getElementById("mUnit").value;
+                    const newCost = parseFloat(document.getElementById("mCost").value) || 0;
+                    let oldCost = null;
+                    if (state.editingMaterialId) {
+                        const prev = state.materials.find((x) => x.id === state.editingMaterialId);
+                        if (prev) oldCost = Number(prev.costPerUnit) || 0;
+                    }
                     const mat = {
                         name,
                         unit,
                         startingQty: parseFloat(document.getElementById("mStarting").value) || 0,
                         reorderLevel: document.getElementById("mReorder").value !== "" ? parseFloat(document.getElementById("mReorder").value) : null,
-                        costPerUnit: parseFloat(document.getElementById("mCost").value) || 0,
+                        costPerUnit: newCost,
                         mlPerBottle: unit === "ml" && document.getElementById("mMlPerBottle").value !== "" ? parseFloat(document.getElementById("mMlPerBottle").value) : null,
                         notes: document.getElementById("mNotes").value.trim(),
                         updatedAt: Date.now(),
@@ -3895,8 +4036,23 @@
                     const idx = state.materials.findIndex((x) => x.id === mat.id);
                     if (idx >= 0) state.materials[idx] = mat;
                     else state.materials.push(mat);
+
+                    // If unit cost changed, recalc linked product cost lines (invQty × costPerUnit) and log history
+                    let propagated = 0;
+                    const costChanged = oldCost != null && Math.abs(oldCost - newCost) > 1e-12;
+                    if (costChanged && mat.id) {
+                        propagated = await propagateMaterialCostToProducts(mat.id, mat.name);
+                    }
+
                     closeMaterialForm();
                     renderInventory(document.getElementById("searchInput").value);
+                    if (propagated > 0) {
+                        renderList(document.getElementById("searchInput").value);
+                        renderSummary();
+                        alert(
+                            `Material cost saved. Updated cost on ${propagated} product${propagated === 1 ? "" : "s"} (inv qty × ₱/unit) and added cost-history points.`,
+                        );
+                    }
                 });
 
                 function openStockMoveForm(preselectMaterialId) {
@@ -4196,23 +4352,28 @@
                     list.innerHTML = "";
                     if (!state.posSales.length) {
                         empty.hidden = false;
-                        empty.textContent = "No POS backup loaded.";
+                        empty.textContent = "No unrecorded POS sales loaded. Click Refresh to pull from Little Ledger.";
                         clearBtn.style.display = "none";
                         return;
                     }
                     empty.hidden = true;
                     clearBtn.style.display = "";
 
-                    const sales = state.posSales.filter((t) => t.type === "sale").sort((a, b) => new Date(b.date) - new Date(a.date));
-                    let missing = 0;
+                    // Only unrecorded sales — already-applied ones are filtered out on load and after apply
+                    const sales = state.posSales
+                        .filter((t) => t.type === "sale" && !isSaleRecordedInInventory(t))
+                        .sort((a, b) => new Date(b.date) - new Date(a.date));
                     let noRecipe = 0;
-                    let recorded = 0;
+
+                    if (!sales.length) {
+                        empty.hidden = false;
+                        empty.textContent = "All loaded sales are already in inventory (or none left to clean up).";
+                        list.innerHTML = "";
+                        return;
+                    }
 
                     sales.slice(0, 80).forEach((tx) => {
                         const lines = txSaleLines(tx);
-                        const recordedFlag = isSaleRecordedInInventory(tx);
-                        if (recordedFlag) recorded++;
-                        else missing++;
 
                         const lineStatus = lines.map((ln) => {
                             const p = productByName(ln.name);
@@ -4221,9 +4382,7 @@
                             return { ...ln, product: p, hasRecipe };
                         });
 
-                        const statusLabel = recordedFlag
-                            ? `<span class="tag" style="background:rgba(30,122,76,0.12);color:var(--good)">Recorded</span>`
-                            : `<span class="tag" style="background:rgba(193,57,43,0.12);color:var(--bad)">Not in inventory</span>`;
+                        const statusLabel = `<span class="tag" style="background:rgba(193,57,43,0.12);color:var(--bad)">Not in inventory</span>`;
 
                         const linesHtml = lineStatus
                             .map((ln) => {
@@ -4236,6 +4395,7 @@
                             })
                             .join("");
 
+                        const canApply = lineStatus.some((ln) => ln.product && ln.hasRecipe && ln.qty);
                         const card = document.createElement("div");
                         card.className = "product-card";
                         const dateStr = tx.date ? new Date(tx.date).toLocaleString() : "";
@@ -4247,7 +4407,7 @@
                                 <div class="meta">${statusLabel} <span class="tag">${escapeHtml(dateStr)}</span></div>
                               </div>
                               <div class="card-actions">
-                                ${!recordedFlag ? `<button type="button" class="apply-pos">Apply to inventory</button>` : ""}
+                                ${canApply ? `<button type="button" class="apply-pos">Apply to inventory</button>` : `<span class="tag" style="font-size:0.72rem;background:rgba(184,134,11,0.15);color:var(--warn)">Fix names / recipes first</span>`}
                               </div>
                             </div>
                             <div class="card-details"><ul class="cost-breakdown">${linesHtml}</ul></div>
@@ -4256,14 +4416,22 @@
                         if (btn) {
                             btn.addEventListener("click", async () => {
                                 try {
+                                    // Reload moves + re-check so a double-click cannot double-deduct
+                                    state.stockMoves = await dbGetAll("stockMoves");
+                                    if (isSaleRecordedInInventory(tx)) {
+                                        alert("This sale is already recorded in inventory. Skipping to avoid double stock-out.");
+                                        state.posSales = state.posSales.filter((t) => t.id !== tx.id);
+                                        renderPosConsolidate();
+                                        return;
+                                    }
+                                    let wrote = 0;
                                     for (const ln of lineStatus) {
                                         if (!ln.product || !ln.hasRecipe || !ln.qty) continue;
-                                        // Open apply path programmatically
-                                        const lines = recipeFromProduct(ln.product);
+                                        const rlines = recipeFromProduct(ln.product);
                                         const noteBase = `POS#${tx.id} Sale #${tx.id} — ${ln.qty}× ${ln.product.name}`;
                                         const merged = {};
-                                        lines.forEach((rl) => {
-                                            if (rl.optional) return; // base only on bulk apply; user can add optional via Apply usage
+                                        rlines.forEach((rl) => {
+                                            if (rl.optional) return; // base only on bulk apply; optional via Apply usage
                                             merged[rl.materialId] = (merged[rl.materialId] || 0) + (Number(rl.qty) || 0) * ln.qty;
                                         });
                                         for (const [materialId, q] of Object.entries(merged)) {
@@ -4281,13 +4449,17 @@
                                             const id = await dbPut("stockMoves", move);
                                             move.id = id;
                                             state.stockMoves.push(move);
+                                            wrote++;
                                         }
                                     }
+                                    // Drop from working list so it disappears after apply
+                                    state.posSales = state.posSales.filter((t) => t.id !== tx.id);
                                     renderPosConsolidate();
                                     renderInventory(document.getElementById("searchInput").value);
+                                    if (!wrote) alert("Nothing written — no matching recipes with quantities.");
                                 } catch (err) {
                                     console.error(err);
-                                    alert("Could not apply this sale to inventory. No partial changes were required beyond what already saved — check console.");
+                                    alert("Could not apply this sale to inventory. Check console.");
                                 }
                             });
                         }
@@ -4297,12 +4469,12 @@
                     if (sales.length > 80) {
                         const more = document.createElement("p");
                         more.style.cssText = "font-size:0.8rem;color:var(--ink-soft);text-align:center";
-                        more.textContent = `Showing latest 80 of ${sales.length} sales.`;
+                        more.textContent = `Showing latest 80 of ${sales.length} unrecorded sales.`;
                         list.appendChild(more);
                     }
 
                     empty.hidden = true;
-                    empty.textContent = `Loaded ${sales.length} sales · ${missing} not in inventory · ${recorded} recorded`;
+                    empty.textContent = `${sales.length} unrecorded sale${sales.length === 1 ? "" : "s"} · apply one by one`;
                 }
 
                 const POS_DB_NAME = "littleLedgerDB";
@@ -4327,10 +4499,16 @@
                             r.onsuccess = () => resolve(r.result || []);
                             r.onerror = () => reject(r.error);
                         });
-                        state.posSales = txs;
-                        // also reload stockMoves so recorded flags are fresh
+                        // Fresh stockMoves so recorded detection is accurate
                         state.stockMoves = await dbGetAll("stockMoves");
+                        // Keep only sales not yet recorded — hide already-applied so you can clean up one by one
+                        const sales = (txs || []).filter((t) => t.type === "sale");
+                        state.posSales = sales.filter((t) => !isSaleRecordedInInventory(t));
+                        const skipped = sales.length - state.posSales.length;
                         renderPosConsolidate();
+                        if (skipped > 0) {
+                            console.info(`[POS consolidate] skipped ${skipped} already-recorded sale(s)`);
+                        }
                     } catch (err) {
                         console.error(err);
                         alert("Could not open POS IndexedDB (littleLedgerDB). Open both apps on the same GitHub Pages domain and allow storage.");
@@ -4341,6 +4519,17 @@
                 document.getElementById("clearPosConsolidate").addEventListener("click", () => {
                     state.posSales = [];
                     renderPosConsolidate();
+                });
+
+                // Collapsible section toggles (Recipes, POS consolidation)
+                document.querySelectorAll(".collapse-toggle").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const id = btn.getAttribute("data-collapse");
+                        const section = document.getElementById(id);
+                        if (!section) return;
+                        const open = section.classList.toggle("open");
+                        btn.setAttribute("aria-expanded", open ? "true" : "false");
+                    });
                 });
 
                 async function seedDefaultMaterialsIfEmpty() {
