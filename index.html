@@ -1393,22 +1393,37 @@
                     </div>
                 </section>
 
-                <div class="stock-trend-card" id="stockTrendCard">
-                    <h3>Stock on hand trend</h3>
-                    <p class="stock-trend-hint">Running quantity from starting stock + stock in/out. Tap a material in the legend to show or hide it.</p>
-                    <div class="stock-trend-controls" id="stockTrendRanges"></div>
-                    <div class="stock-trend-legend" id="stockTrendLegend"></div>
-                    <div class="stock-trend-chart-wrap">
-                        <canvas class="stock-trend-chart" id="stockTrendChart" height="200"></canvas>
+                <div class="collapsible-section open" id="stockTrendSection">
+                    <button type="button" class="collapse-toggle" data-collapse="stockTrendSection" aria-expanded="true">
+                        <span class="collapse-chevron">▼</span>
+                        <span>Stock on hand trend</span>
+                    </button>
+                    <div class="collapse-body">
+                        <div class="stock-trend-card" id="stockTrendCard" style="margin-bottom: 0; box-shadow: none; border: none; padding: 4px 0 0">
+                            <p class="stock-trend-hint">Running quantity from starting stock + stock in/out. Tap a material in the legend to show or hide it.</p>
+                            <div class="stock-trend-controls" id="stockTrendRanges"></div>
+                            <div class="stock-trend-legend" id="stockTrendLegend"></div>
+                            <div class="stock-trend-chart-wrap">
+                                <canvas class="stock-trend-chart" id="stockTrendChart" height="200"></canvas>
+                            </div>
+                            <div class="stock-trend-readout" id="stockTrendReadout"></div>
+                            <p class="stock-trend-empty" id="stockTrendEmpty" hidden>No stock movements yet — chart will appear after stock in/out or POS deductions.</p>
+                        </div>
                     </div>
-                    <div class="stock-trend-readout" id="stockTrendReadout"></div>
-                    <p class="stock-trend-empty" id="stockTrendEmpty" hidden>No stock movements yet — chart will appear after stock in/out or POS deductions.</p>
                 </div>
 
-                <section id="materialList" class="product-list"></section>
-                <p id="emptyMaterials" class="empty-state" hidden>
-                    No materials yet. Add laminating film (A4 pouch), bond paper, photo paper, ink (ml), etc. Then set recipes on products so each sale knows what it consumes.
-                </p>
+                <div class="collapsible-section open" id="materialsSection">
+                    <button type="button" class="collapse-toggle" data-collapse="materialsSection" aria-expanded="true">
+                        <span class="collapse-chevron">▼</span>
+                        <span>Materials</span>
+                    </button>
+                    <div class="collapse-body">
+                        <section id="materialList" class="product-list"></section>
+                        <p id="emptyMaterials" class="empty-state" hidden>
+                            No materials yet. Add laminating film (A4 pouch), bond paper, photo paper, ink (ml), etc. Then set recipes on products so each sale knows what it consumes.
+                        </p>
+                    </div>
+                </div>
 
                 <div class="collapsible-section open" id="recipesSection">
                     <button type="button" class="collapse-toggle" data-collapse="recipesSection" aria-expanded="true">
@@ -5088,7 +5103,7 @@
                     renderPosConsolidate();
                 });
 
-                // Collapsible section toggles (Recipes, POS consolidation)
+                // Collapsible section toggles (Stock trend, Materials, Recipes, POS consolidation)
                 document.querySelectorAll(".collapse-toggle").forEach((btn) => {
                     btn.addEventListener("click", () => {
                         const id = btn.getAttribute("data-collapse");
@@ -5096,6 +5111,10 @@
                         if (!section) return;
                         const open = section.classList.toggle("open");
                         btn.setAttribute("aria-expanded", open ? "true" : "false");
+                        // Canvas has no size while hidden — redraw stock trend after expand
+                        if (open && id === "stockTrendSection") {
+                            requestAnimationFrame(() => renderStockTrend());
+                        }
                     });
                 });
 
