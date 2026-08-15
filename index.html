@@ -622,6 +622,100 @@
                 color: var(--card);
                 border-color: var(--key);
             }
+
+            .inv-filters {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin: 0 0 12px;
+                padding: 10px 12px;
+                background: rgba(28, 26, 23, 0.03);
+                border: 1px solid var(--line);
+                border-radius: 9px;
+            }
+            .inv-filter-row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 6px 8px;
+            }
+            .inv-filter-label {
+                font-size: 0.65rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--ink-soft);
+                min-width: 72px;
+            }
+            .inv-filter-chip {
+                background: transparent;
+                border: 1px solid var(--line);
+                border-radius: 20px;
+                padding: 5px 11px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--ink-soft);
+                cursor: pointer;
+            }
+            .inv-filter-chip:hover {
+                color: var(--ink);
+                border-color: var(--ink-soft);
+            }
+            .inv-filter-chip.active {
+                background: var(--key);
+                color: var(--card);
+                border-color: var(--key);
+            }
+            .inv-filter-chip.active.warn {
+                background: var(--warn);
+                border-color: var(--warn);
+                color: #fff;
+            }
+            .inv-filter-chip.active.bad {
+                background: var(--bad);
+                border-color: var(--bad);
+                color: #fff;
+            }
+            .inv-filter-chip.active.good {
+                background: var(--good);
+                border-color: var(--good);
+                color: #fff;
+            }
+            .inv-filter-chip.active.cyan {
+                background: var(--cyan);
+                border-color: var(--cyan);
+                color: #fff;
+            }
+            .inv-filter-meta {
+                font-size: 0.72rem;
+                color: var(--ink-soft);
+                margin: 0;
+            }
+            .tag.stock-under {
+                background: rgba(193, 57, 43, 0.12);
+                color: var(--bad);
+            }
+            .tag.stock-balanced {
+                background: rgba(30, 122, 76, 0.12);
+                color: var(--good);
+            }
+            .tag.stock-over {
+                background: rgba(0, 174, 239, 0.12);
+                color: #0077a8;
+            }
+            .tag.move-fast {
+                background: rgba(232, 19, 143, 0.12);
+                color: var(--magenta);
+            }
+            .tag.move-slow {
+                background: rgba(184, 134, 11, 0.15);
+                color: var(--warn);
+            }
+            .tag.move-stagnant {
+                background: rgba(28, 26, 23, 0.08);
+                color: var(--ink-soft);
+            }
+
             .stock-trend-legend {
                 display: flex;
                 flex-wrap: wrap;
@@ -1388,7 +1482,7 @@
                     <button id="applyUsageBtn" class="btn-secondary">Apply usage</button>
                     <div class="stat-chips">
                         <div class="chip">Materials<b id="invCount" class="mono">0</b></div>
-                        <div class="chip">Low stock<b id="invLow" class="mono">0</b></div>
+                        <div class="chip" id="invLowChip" title="Filter materials at or below reorder level" style="cursor: pointer">Low stock<b id="invLow" class="mono">0</b></div>
                         <div class="chip" title="Material stock × cost per unit">Inv. value (cost)<b id="invValue" class="mono priv-value amt">—</b></div>
                     </div>
                 </section>
@@ -1418,6 +1512,25 @@
                         <span>Materials</span>
                     </button>
                     <div class="collapse-body">
+                        <div class="inv-filters" id="invFilters">
+                            <div class="inv-filter-row" id="invFilterStockRow">
+                                <span class="inv-filter-label">Stock</span>
+                                <button type="button" class="inv-filter-chip active" data-inv-stock="all">All</button>
+                                <button type="button" class="inv-filter-chip" data-inv-stock="low">Low stock</button>
+                                <button type="button" class="inv-filter-chip" data-inv-stock="under">Understock</button>
+                                <button type="button" class="inv-filter-chip" data-inv-stock="balanced">Balanced</button>
+                                <button type="button" class="inv-filter-chip" data-inv-stock="over">Overstock</button>
+                            </div>
+                            <div class="inv-filter-row" id="invFilterMoveRow">
+                                <span class="inv-filter-label">Movement</span>
+                                <button type="button" class="inv-filter-chip active" data-inv-move="all">All</button>
+                                <button type="button" class="inv-filter-chip" data-inv-move="fast">Fast moving</button>
+                                <button type="button" class="inv-filter-chip" data-inv-move="slow">Slow moving</button>
+                                <button type="button" class="inv-filter-chip" data-inv-move="stagnant">Stagnant</button>
+                            </div>
+                            <p class="inv-filter-meta" id="invFilterMeta">Classified from last 30 days of stock-outs and POS sales (forecast-excluded sales ignored for demand).</p>
+                        </div>
+
                         <section id="materialList" class="product-list"></section>
                         <p id="emptyMaterials" class="empty-state" hidden>
                             No materials yet. Add laminating film (A4 pouch), bond paper, photo paper, ink (ml), etc. Then set recipes on products so each sale knows what it consumes.
@@ -1852,6 +1965,10 @@
                     stockMoves: [],
                     stockTrendRange: "30d",
                     stockTrendHidden: [],
+                    invStockFilter: "all",
+                    invMoveFilter: "all",
+                    posDemandByMaterial: null, // { [materialId]: qty in lookback } from POS sales excluding excludeFromForecast
+                    posDemandLoadedAt: 0,
                     settings: { shopName: "Documenting", currency: "₱", defaultMargin: 30 },
                     editingId: null,
                     editingOrderId: null,
@@ -4412,6 +4529,202 @@
                 }
 
                 // ---------- Inventory ----------
+
+                // ---------- Inventory classification (stock level + movement) ----------
+                const INV_LOOKBACK_DAYS = 30;
+                const INV_UNDER_DAYS = 10; // days of cover → understock
+                const INV_OVER_DAYS = 60; // days of cover → overstock
+                const INV_FAST_SHARE = 0.08; // daily use ≥ 8% of on-hand → fast
+                const INV_FAST_ABS = 0.5; // or ≥ 0.5 units/day
+
+                /**
+                 * Load POS sales from littleLedgerDB and map material consumption via product recipes.
+                 * Sales marked excludeFromForecast are ignored for demand (still may have stock-outs on books).
+                 */
+                async function refreshPosDemandByMaterial(force) {
+                    const now = Date.now();
+                    if (!force && state.posDemandByMaterial && now - (state.posDemandLoadedAt || 0) < 60000) {
+                        return state.posDemandByMaterial;
+                    }
+                    const since = now - INV_LOOKBACK_DAYS * 86400000;
+                    const byMat = {};
+                    try {
+                        const pdb = await openPosDBReadonly();
+                        if (!pdb.objectStoreNames.contains("transactions")) {
+                            state.posDemandByMaterial = byMat;
+                            state.posDemandLoadedAt = now;
+                            return byMat;
+                        }
+                        const txs = await new Promise((resolve, reject) => {
+                            const r = pdb.transaction("transactions", "readonly").objectStore("transactions").getAll();
+                            r.onsuccess = () => resolve(r.result || []);
+                            r.onerror = () => reject(r.error);
+                        });
+                        const productsByName = {};
+                        state.products.forEach((p) => {
+                            const k = (p.name || "").toLowerCase().trim();
+                            if (k) productsByName[k] = p;
+                        });
+                        (txs || []).forEach((tx) => {
+                            if (!tx || tx.type !== "sale") return;
+                            if (tx.excludeFromForecast) return; // demand only
+                            const ts = tx.date ? new Date(tx.date).getTime() : 0;
+                            if (!ts || ts < since) return;
+                            const lines =
+                                tx.items && Array.isArray(tx.items) && tx.items.length
+                                    ? tx.items.map((ln) => ({ name: (ln.item || ln.name || "").trim(), qty: Number(ln.qty) || 0 }))
+                                    : [{ name: (tx.item || "").trim(), qty: Number(tx.qty) || 1 }];
+                            lines.forEach((ln) => {
+                                if (!ln.qty) return;
+                                const p = productsByName[(ln.name || "").toLowerCase().trim()];
+                                if (!p) return;
+                                recipeFromProduct(p).forEach((rl) => {
+                                    if (rl.optional) return;
+                                    const mid = rl.materialId;
+                                    if (!mid) return;
+                                    const q = (Number(rl.qty) || 0) * ln.qty;
+                                    if (q <= 0) return;
+                                    byMat[mid] = (byMat[mid] || 0) + q;
+                                });
+                            });
+                        });
+                    } catch (e) {
+                        console.info("[inv filters] POS demand unavailable", e && e.message ? e.message : e);
+                    }
+                    state.posDemandByMaterial = byMat;
+                    state.posDemandLoadedAt = now;
+                    return byMat;
+                }
+
+                function materialOutQtyInWindow(matId, sinceTs) {
+                    let q = 0;
+                    state.stockMoves.forEach((m) => {
+                        if (m.materialId !== matId) return;
+                        if (m.type !== "out") return;
+                        const d = m.date || 0;
+                        if (d < sinceTs) return;
+                        q += Number(m.qty) || 0;
+                    });
+                    return q;
+                }
+
+                /**
+                 * Classify one material for filters and badges.
+                 * Demand prefers POS sales (excl. excludeFromForecast); falls back to stock-outs.
+                 */
+                function classifyMaterial(mat, posDemand) {
+                    const cur = materialCurrentQty(mat);
+                    const reorder = mat.reorderLevel != null ? Number(mat.reorderLevel) : null;
+                    const isLow = reorder != null && isFinite(reorder) && cur <= reorder;
+
+                    const since = Date.now() - INV_LOOKBACK_DAYS * 86400000;
+                    const outQty = materialOutQtyInWindow(mat.id, since);
+                    const posQty = posDemand && posDemand[mat.id] != null ? Number(posDemand[mat.id]) || 0 : 0;
+                    // Prefer POS demand for velocity; if none, use stock-outs (includes apply-usage + POS outs)
+                    const demandQty = posQty > 0 ? posQty : outQty;
+                    const dailyUse = demandQty / INV_LOOKBACK_DAYS;
+
+                    let movement = "stagnant";
+                    if (demandQty > 0) {
+                        const share = cur > 0 ? dailyUse / cur : dailyUse > 0 ? 1 : 0;
+                        if (dailyUse >= INV_FAST_ABS || share >= INV_FAST_SHARE || demandQty >= Math.max(15, (reorder || 0) * 0.5)) {
+                            movement = "fast";
+                        } else {
+                            movement = "slow";
+                        }
+                    }
+
+                    let daysCover = null;
+                    if (dailyUse > 1e-9) daysCover = cur / dailyUse;
+                    else if (cur > 0) daysCover = Infinity;
+                    else daysCover = 0;
+
+                    let stockLevel = "balanced";
+                    if (cur <= 0 || isLow || (dailyUse > 0 && daysCover < INV_UNDER_DAYS)) {
+                        stockLevel = "under";
+                    } else if ((dailyUse > 0 && daysCover > INV_OVER_DAYS) || (dailyUse <= 0 && cur > 0 && (reorder == null || cur > reorder * 2) && cur >= 5)) {
+                        // No recent demand + meaningful on-hand → overstock; or long cover
+                        stockLevel = "over";
+                    } else {
+                        stockLevel = "balanced";
+                    }
+
+                    return {
+                        cur,
+                        reorder,
+                        isLow,
+                        movement,
+                        stockLevel,
+                        dailyUse,
+                        daysCover,
+                        demandQty,
+                        outQty,
+                        posQty,
+                    };
+                }
+
+                function bindInvFilters() {
+                    const root = document.getElementById("invFilters");
+                    if (root && root.dataset.bound !== "1") {
+                        root.dataset.bound = "1";
+                        root.addEventListener("click", (e) => {
+                            const btn = e.target.closest("[data-inv-stock], [data-inv-move]");
+                            if (!btn) return;
+                            if (btn.hasAttribute("data-inv-stock")) {
+                                state.invStockFilter = btn.getAttribute("data-inv-stock") || "all";
+                            }
+                            if (btn.hasAttribute("data-inv-move")) {
+                                state.invMoveFilter = btn.getAttribute("data-inv-move") || "all";
+                            }
+                            renderInventory(document.getElementById("searchInput").value);
+                        });
+                    }
+                    const lowChip = document.getElementById("invLowChip");
+                    if (lowChip && lowChip.dataset.bound !== "1") {
+                        lowChip.dataset.bound = "1";
+                        lowChip.addEventListener("click", () => {
+                            state.invStockFilter = state.invStockFilter === "low" ? "all" : "low";
+                            state.invMoveFilter = "all";
+                            if (state.activeTab !== "inventory") {
+                                // switch tab if needed
+                                const tabBtn = document.querySelector('.tab-btn[data-tab="inventory"]');
+                                if (tabBtn) tabBtn.click();
+                                else {
+                                    state.activeTab = "inventory";
+                                    renderInventory(document.getElementById("searchInput").value);
+                                }
+                            } else {
+                                renderInventory(document.getElementById("searchInput").value);
+                            }
+                        });
+                    }
+                }
+
+                function syncInvFilterChips() {
+                    document.querySelectorAll("[data-inv-stock]").forEach((b) => {
+                        const on = b.getAttribute("data-inv-stock") === state.invStockFilter;
+                        b.classList.toggle("active", on);
+                        b.classList.remove("warn", "bad", "good", "cyan");
+                        if (on) {
+                            const v = state.invStockFilter;
+                            if (v === "low" || v === "under") b.classList.add("bad");
+                            else if (v === "balanced") b.classList.add("good");
+                            else if (v === "over") b.classList.add("cyan");
+                        }
+                    });
+                    document.querySelectorAll("[data-inv-move]").forEach((b) => {
+                        const on = b.getAttribute("data-inv-move") === state.invMoveFilter;
+                        b.classList.toggle("active", on);
+                        b.classList.remove("warn", "bad", "good", "cyan");
+                        if (on) {
+                            const v = state.invMoveFilter;
+                            if (v === "fast") b.classList.add("cyan");
+                            else if (v === "slow") b.classList.add("warn");
+                            else if (v === "stagnant") b.classList.add("bad");
+                        }
+                    });
+                }
+
                 function materialCurrentQty(mat) {
                     let qty = Number(mat.startingQty) || 0;
                     const moves = state.stockMoves.filter((m) => m.materialId === mat.id).sort((a, b) => (a.date || 0) - (b.date || 0) || (a.id || 0) - (b.id || 0));
@@ -4428,27 +4741,98 @@
                  * Uses non-optional recipe lines only (bottleneck = min of available / invQty).
                  */
                 function renderInventory(filterText) {
+                    bindInvFilters();
+                    syncInvFilterChips();
+                    // Kick off POS demand refresh (non-blocking first paint uses cache/stock-outs)
+                    refreshPosDemandByMaterial(false)
+                        .then(() => {
+                            // Re-render only if still on inventory and filters may use POS data
+                            if (state.activeTab === "inventory" && state.posDemandByMaterial) {
+                                // avoid infinite loop: only re-render if first pass lacked POS data
+                            }
+                        })
+                        .catch(() => {});
+
                     const q = (filterText || "").trim().toLowerCase();
                     const list = document.getElementById("materialList");
                     list.innerHTML = "";
                     let mats = state.materials.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
                     if (q) mats = mats.filter((m) => (m.name || "").toLowerCase().includes(q) || (m.unit || "").toLowerCase().includes(q) || (m.notes || "").toLowerCase().includes(q));
 
-                    let low = 0;
-                    mats.forEach((mat) => {
-                        const cur = materialCurrentQty(mat);
+                    const posDemand = state.posDemandByMaterial || {};
+                    const classified = mats.map((mat) => ({ mat, info: classifyMaterial(mat, posDemand) }));
+
+                    // Counts across all materials (not just filtered) for chips
+                    let lowAll = 0;
+                    let underAll = 0;
+                    let balancedAll = 0;
+                    let overAll = 0;
+                    let fastAll = 0;
+                    let slowAll = 0;
+                    let stagAll = 0;
+                    state.materials.forEach((mat) => {
+                        const info = classifyMaterial(mat, posDemand);
+                        if (info.isLow) lowAll++;
+                        if (info.stockLevel === "under") underAll++;
+                        else if (info.stockLevel === "over") overAll++;
+                        else balancedAll++;
+                        if (info.movement === "fast") fastAll++;
+                        else if (info.movement === "slow") slowAll++;
+                        else stagAll++;
+                    });
+
+                    const stockF = state.invStockFilter || "all";
+                    const moveF = state.invMoveFilter || "all";
+                    const filtered = classified.filter(({ info }) => {
+                        if (stockF === "low" && !info.isLow) return false;
+                        if (stockF === "under" && info.stockLevel !== "under") return false;
+                        if (stockF === "balanced" && info.stockLevel !== "balanced") return false;
+                        if (stockF === "over" && info.stockLevel !== "over") return false;
+                        if (moveF === "fast" && info.movement !== "fast") return false;
+                        if (moveF === "slow" && info.movement !== "slow") return false;
+                        if (moveF === "stagnant" && info.movement !== "stagnant") return false;
+                        return true;
+                    });
+
+                    const meta = document.getElementById("invFilterMeta");
+                    if (meta) {
+                        const parts = [];
+                        if (stockF !== "all" || moveF !== "all") {
+                            parts.push(`Showing ${filtered.length} of ${classified.length}`);
+                        }
+                        parts.push(`Low ${lowAll} · Under ${underAll} · Balanced ${balancedAll} · Over ${overAll}`);
+                        parts.push(`Fast ${fastAll} · Slow ${slowAll} · Stagnant ${stagAll}`);
+                        parts.push("Demand: POS sales (excl. forecast-excluded) → recipes; else stock-outs · 30d");
+                        meta.textContent = parts.join(" · ");
+                    }
+
+                    filtered.forEach(({ mat, info }) => {
+                        const cur = info.cur;
                         const cost = Number(mat.costPerUnit) || 0;
-                        const reorder = mat.reorderLevel != null ? Number(mat.reorderLevel) : null;
-                        if (reorder != null && cur <= reorder) low++;
+                        const reorder = info.reorder;
 
                         const card = document.createElement("div");
                         card.className = "product-card";
-                        const lowTag = reorder != null && cur <= reorder ? `<span class="tag" style="background:rgba(193,57,43,0.12);color:var(--bad)">Low</span>` : "";
+                        const tags = [];
+                        if (info.isLow) tags.push(`<span class="tag stock-under">Low</span>`);
+                        if (info.stockLevel === "under") tags.push(`<span class="tag stock-under">Understock</span>`);
+                        else if (info.stockLevel === "over") tags.push(`<span class="tag stock-over">Overstock</span>`);
+                        else tags.push(`<span class="tag stock-balanced">Balanced</span>`);
+                        if (info.movement === "fast") tags.push(`<span class="tag move-fast">Fast</span>`);
+                        else if (info.movement === "slow") tags.push(`<span class="tag move-slow">Slow</span>`);
+                        else tags.push(`<span class="tag move-stagnant">Stagnant</span>`);
+
+                        let coverLabel = "—";
+                        if (info.daysCover == null) coverLabel = "—";
+                        else if (!isFinite(info.daysCover)) coverLabel = "∞";
+                        else coverLabel = info.daysCover >= 100 ? Math.round(info.daysCover) + "d" : info.daysCover.toFixed(1) + "d";
+
                         let yieldHtml = "";
                         if (mat.unit === "ml" && mat.mlPerBottle && mat.mlPerBottle > 0) {
                             const bottles = cur / mat.mlPerBottle;
                             yieldHtml = `<div class="figure"><span class="label">≈ Bottles</span><span class="value mono priv-value amt">${bottles.toFixed(2)}</span></div>`;
                         }
+                        const cols = yieldHtml ? 6 : 5;
                         card.innerHTML = `
                           <div class="card-body">
                             <div class="card-main">
@@ -4457,15 +4841,16 @@
                                 <div class="meta">
                                   <span class="tag">${escapeHtml(mat.unit || "")}</span>
                                   ${mat.unit === "ml" && mat.mlPerBottle ? `<span class="tag">${fmtNum(mat.mlPerBottle)} ml/bottle</span>` : ""}
-                                  ${lowTag}
+                                  ${tags.join(" ")}
                                   ${mat.notes ? `<span class="tag">${escapeHtml(mat.notes)}</span>` : ""}
                                 </div>
                               </div>
-                              <div class="card-figures" style="grid-template-columns:repeat(${yieldHtml ? 5 : 4},minmax(64px,1fr))">
+                              <div class="card-figures" style="grid-template-columns:repeat(${cols},minmax(64px,1fr))">
                                 <div class="figure"><span class="label">Current</span><span class="value mono priv-value amt">${fmtNum(cur)}</span></div>
                                 <div class="figure"><span class="label">Starting</span><span class="value mono priv-value amt">${fmtNum(mat.startingQty)}</span></div>
                                 <div class="figure"><span class="label">Cost / unit</span><span class="value mono priv-value amt">${fmtMoney(cost)}</span></div>
                                 <div class="figure"><span class="label">Value</span><span class="value mono priv-value amt">${fmtMoney(cur * cost)}</span></div>
+                                <div class="figure" title="Days of cover at recent demand rate (30d, excl. forecast-excluded sales)"><span class="label">Cover</span><span class="value mono">${coverLabel}</span></div>
                                 ${yieldHtml}
                               </div>
                               <div class="card-actions">
@@ -4487,8 +4872,7 @@
                     });
 
                     document.getElementById("invCount").textContent = String(state.materials.length);
-                    document.getElementById("invLow").textContent = String(low);
-                    // Material stock × cost only (products potential is on Products tab)
+                    document.getElementById("invLow").textContent = String(lowAll);
                     let matValue = 0;
                     state.materials.forEach((mat) => {
                         matValue += materialCurrentQty(mat) * (Number(mat.costPerUnit) || 0);
@@ -4498,11 +4882,38 @@
                         invEl.textContent = fmtMoney(matValue);
                         bindPeek(invEl);
                     }
-                    document.getElementById("emptyMaterials").hidden = state.materials.length > 0;
+                    const emptyEl = document.getElementById("emptyMaterials");
+                    if (emptyEl) {
+                        if (!state.materials.length) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent =
+                                "No materials yet. Add laminating film (A4 pouch), bond paper, photo paper, ink (ml), etc. Then set recipes on products so each sale knows what it consumes.";
+                        } else if (!filtered.length) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No materials match the current filters. Clear Stock / Movement filters or adjust search.";
+                        } else {
+                            emptyEl.hidden = true;
+                        }
+                    }
                     list.querySelectorAll(".priv-value").forEach(bindPeek);
 
                     renderStockTrend();
                     renderRecipes();
+
+                    // After POS demand loads the first time, refresh once so cover/movement use sales
+                    if (!state._invPosDemandReady) {
+                        state._invPosDemandReady = "loading";
+                        refreshPosDemandByMaterial(true)
+                            .then(() => {
+                                state._invPosDemandReady = true;
+                                if (state.activeTab === "inventory") {
+                                    renderInventory(document.getElementById("searchInput").value);
+                                }
+                            })
+                            .catch(() => {
+                                state._invPosDemandReady = true;
+                            });
+                    }
                 }
 
                 function fmtNum(n) {
