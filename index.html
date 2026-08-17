@@ -3660,7 +3660,7 @@ window.CostingSync = new CostingSyncManager();
                     }
 
                     const id = await dbPut("products", product);
-                    window.CostingSync?.pushRecord("products", product);
+                    //window.CostingSync?.pushRecord("products", product);
                     product.id = product.id || id;
 
                     const idx = state.products.findIndex((p) => p.id === product.id);
@@ -3968,7 +3968,7 @@ window.CostingSync = new CostingSyncManager();
                     }
 
                     const id = await dbPut("orders", order);
-                    window.CostingSync?.pushRecord("orders", order);
+                    //window.CostingSync?.pushRecord("orders", order);
                     order.id = order.id || id;
 
                     const idx = state.orders.findIndex((o) => o.id === order.id);
@@ -5433,7 +5433,7 @@ window.CostingSync = new CostingSyncManager();
                         mat.createdAt = Date.now();
                     }
                     const id = await dbPut("materials", mat);
-                    window.CostingSync?.pushRecord("materials", mat);
+                    //window.CostingSync?.pushRecord("materials", mat);
                     mat.id = mat.id || id;
                     const idx = state.materials.findIndex((x) => x.id === mat.id);
                     if (idx >= 0) state.materials[idx] = mat;
@@ -5497,7 +5497,7 @@ window.CostingSync = new CostingSyncManager();
                         createdAt: Date.now(),
                     };
                     const id = await dbPut("stockMoves", move);
-                    window.CostingSync?.pushRecord("stockMoves", move);
+                    //window.CostingSync?.pushRecord("stockMoves", move);
                     move.id = id;
                     state.stockMoves.push(move);
                     closeStockMoveForm();
@@ -5584,7 +5584,7 @@ window.CostingSync = new CostingSyncManager();
                         rec.lines = lines;
                         rec.updatedAt = Date.now();
                         await dbPut("recipes", rec);
-                        window.CostingSync?.pushRecord("recipes", rec);
+                        //window.CostingSync?.pushRecord("recipes", rec);
                     } else {
                         rec = { productId, lines, createdAt: Date.now(), updatedAt: Date.now() };
                         const id = await dbPut("recipes", rec);
