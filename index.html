@@ -1553,6 +1553,28 @@
                     </div>
                 </div>
 
+                <div class="collapsible-section" id="stockMovesSection">
+                    <button type="button" class="collapse-toggle" data-collapse="stockMovesSection" aria-expanded="false">
+                        <span class="collapse-chevron">▼</span>
+                        <span>Stock movements</span>
+                    </button>
+                    <div class="collapse-body">
+                        <p class="collapse-hint">All stock in, out, and adjust entries (newest first). Deleting a movement updates current on-hand. Search filters by material name or note.</p>
+                        <div class="inv-filters" id="stockMoveFilters" style="margin-bottom: 12px">
+                            <div class="inv-filter-row">
+                                <span class="inv-filter-label">Type</span>
+                                <button type="button" class="inv-filter-chip active" data-sm-type="all">All</button>
+                                <button type="button" class="inv-filter-chip" data-sm-type="in">Stock in</button>
+                                <button type="button" class="inv-filter-chip" data-sm-type="out">Stock out</button>
+                                <button type="button" class="inv-filter-chip" data-sm-type="adjust">Adjust</button>
+                            </div>
+                            <p class="inv-filter-meta" id="stockMoveFilterMeta"></p>
+                        </div>
+                        <section id="stockMoveList" class="product-list"></section>
+                        <p id="emptyStockMoves" class="empty-state" hidden style="padding: 16px">No stock movements yet. Use Stock in / out or Apply usage to record them.</p>
+                    </div>
+                </div>
+
                 <div class="collapsible-section" id="posConsolidateSection">
                     <button type="button" class="collapse-toggle" data-collapse="posConsolidateSection" aria-expanded="false">
                         <span class="collapse-chevron">▼</span>
@@ -1968,6 +1990,7 @@
                     stockTrendHidden: [],
                     invStockFilter: "all",
                     invMoveFilter: "all",
+                    stockMoveTypeFilter: "all",
                     posDemandByMaterial: null, // { [materialId]: qty in lookback } from POS sales excluding excludeFromForecast
                     posDemandLoadedAt: 0,
                     settings: { shopName: "Documenting", currency: "₱", defaultMargin: 30 },
@@ -4900,6 +4923,7 @@
 
                     renderStockTrend();
                     renderRecipes();
+                    renderStockMoves(filterText);
 
                     // After POS demand loads the first time, refresh once so cover/movement use sales
                     if (!state._invPosDemandReady) {
@@ -4914,6 +4938,155 @@
                             .catch(() => {
                                 state._invPosDemandReady = true;
                             });
+                    }
+                }
+
+                function renderStockMoves(filterText) {
+                    const list = document.getElementById("stockMoveList");
+                    const emptyEl = document.getElementById("emptyStockMoves");
+                    const meta = document.getElementById("stockMoveFilterMeta");
+                    if (!list) return;
+
+                    // bind type filters once
+                    const root = document.getElementById("stockMoveFilters");
+                    if (root && root.dataset.bound !== "1") {
+                        root.dataset.bound = "1";
+                        root.addEventListener("click", (e) => {
+                            const btn = e.target.closest("[data-sm-type]");
+                            if (!btn) return;
+                            state.stockMoveTypeFilter = btn.getAttribute("data-sm-type") || "all";
+                            renderStockMoves(document.getElementById("searchInput").value);
+                        });
+                    }
+                    document.querySelectorAll("[data-sm-type]").forEach((b) => {
+                        const on = b.getAttribute("data-sm-type") === (state.stockMoveTypeFilter || "all");
+                        b.classList.toggle("active", on);
+                        b.classList.remove("good", "bad", "cyan", "warn");
+                        if (on) {
+                            const v = state.stockMoveTypeFilter;
+                            if (v === "in") b.classList.add("good");
+                            else if (v === "out") b.classList.add("bad");
+                            else if (v === "adjust") b.classList.add("cyan");
+                        }
+                    });
+
+                    const q = (filterText || "").trim().toLowerCase();
+                    const typeF = state.stockMoveTypeFilter || "all";
+                    const matById = {};
+                    state.materials.forEach((m) => {
+                        matById[m.id] = m;
+                    });
+
+                    let moves = state.stockMoves.slice().sort((a, b) => (b.date || 0) - (a.date || 0) || (b.id || 0) - (a.id || 0));
+
+                    moves = moves.filter((m) => {
+                        if (typeF !== "all" && m.type !== typeF) return false;
+                        if (!q) return true;
+                        const mat = matById[m.materialId];
+                        const matName = mat ? mat.name || "" : "";
+                        const note = m.note || "";
+                        const src = m.source || "";
+                        return matName.toLowerCase().includes(q) || note.toLowerCase().includes(q) || src.toLowerCase().includes(q) || String(m.materialId).includes(q);
+                    });
+
+                    list.innerHTML = "";
+                    if (meta) {
+                        const total = state.stockMoves.length;
+                        const parts = [`${moves.length} shown`];
+                        if (typeF !== "all" || q) parts.push(`of ${total} total`);
+                        else parts.push(`total`);
+                        const counts = { in: 0, out: 0, adjust: 0 };
+                        state.stockMoves.forEach((m) => {
+                            if (counts[m.type] != null) counts[m.type]++;
+                        });
+                        parts.push(`In ${counts.in} · Out ${counts.out} · Adjust ${counts.adjust}`);
+                        meta.textContent = parts.join(" · ");
+                    }
+
+                    if (!state.stockMoves.length) {
+                        if (emptyEl) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No stock movements yet. Use Stock in / out or Apply usage to record them.";
+                        }
+                        return;
+                    }
+                    if (!moves.length) {
+                        if (emptyEl) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No movements match the current type filter or search.";
+                        }
+                        return;
+                    }
+                    if (emptyEl) emptyEl.hidden = true;
+
+                    const typeLabel = { in: "Stock in", out: "Stock out", adjust: "Adjust" };
+                    const typeTagClass = { in: "stock-balanced", out: "stock-under", adjust: "stock-over" };
+
+                    moves.slice(0, 200).forEach((m) => {
+                        const mat = matById[m.materialId];
+                        const matName = mat ? mat.name : `Material #${m.materialId}`;
+                        const unit = mat ? mat.unit || "" : "";
+                        const tLabel = typeLabel[m.type] || m.type || "?";
+                        const tClass = typeTagClass[m.type] || "";
+                        const dateStr = m.date
+                            ? new Date(m.date).toLocaleString(undefined, {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                              })
+                            : "—";
+                        const qtySign = m.type === "out" ? "−" : m.type === "in" ? "+" : "=";
+                        const srcNote = [];
+                        if (m.source === "pos-sale") srcNote.push("POS sale");
+                        else if (m.source === "apply-usage") srcNote.push("Apply usage");
+                        if (m.transactionId != null) srcNote.push(`#${m.transactionId}`);
+                        if (m.productId != null) {
+                            const p = state.products.find((x) => x.id === m.productId);
+                            if (p) srcNote.push(p.name);
+                        }
+                        const noteText = m.note || "";
+                        const card = document.createElement("article");
+                        card.className = "product-card";
+                        card.dataset.id = m.id;
+                        card.innerHTML = `
+                          <div class="card-body">
+                            <div class="card-main">
+                              <div class="card-title">
+                                <h3>${escapeHtml(matName)}</h3>
+                                <div class="meta">
+                                  <span class="tag ${tClass}">${escapeHtml(tLabel)}</span>
+                                  <span>${escapeHtml(dateStr)}</span>
+                                  ${srcNote.length ? `<span class="tag">${escapeHtml(srcNote.join(" · "))}</span>` : ""}
+                                </div>
+                                ${noteText ? `<div class="order-net" style="margin-top:4px;font-size:0.78rem;color:var(--ink-soft)">${escapeHtml(noteText)}</div>` : ""}
+                              </div>
+                              <div class="card-figures" style="grid-template-columns:repeat(2,minmax(70px,1fr));flex:0 1 180px">
+                                <div class="figure"><span class="label">Qty</span><span class="value mono">${qtySign}${fmtNum(m.qty)} ${escapeHtml(unit)}</span></div>
+                                <div class="figure"><span class="label">Type</span><span class="value" style="font-size:0.82rem">${escapeHtml(tLabel)}</span></div>
+                              </div>
+                              <div class="card-actions">
+                                <button type="button" class="delete-btn del-move">Delete</button>
+                              </div>
+                            </div>
+                          </div>`;
+                        card.querySelector(".del-move").addEventListener("click", async () => {
+                            const label = `${tLabel} ${fmtNum(m.qty)} ${unit} · ${matName}`;
+                            if (!confirm(`Delete this stock movement?\n\n${label}\n\nCurrent on-hand will be recalculated from remaining moves.`)) return;
+                            await dbDelete("stockMoves", m.id);
+                            state.stockMoves = state.stockMoves.filter((x) => x.id !== m.id);
+                            renderInventory(document.getElementById("searchInput").value);
+                            renderSummary();
+                        });
+                        list.appendChild(card);
+                    });
+
+                    if (moves.length > 200) {
+                        const more = document.createElement("p");
+                        more.style.cssText = "font-size:0.8rem;color:var(--ink-soft);text-align:center;padding:8px";
+                        more.textContent = `Showing latest 200 of ${moves.length} matching movements.`;
+                        list.appendChild(more);
                     }
                 }
 
@@ -5093,6 +5266,12 @@
                     move.id = id;
                     state.stockMoves.push(move);
                     closeStockMoveForm();
+                    const smSec = document.getElementById("stockMovesSection");
+                    if (smSec && !smSec.classList.contains("open")) {
+                        smSec.classList.add("open");
+                        const tog = smSec.querySelector(".collapse-toggle");
+                        if (tog) tog.setAttribute("aria-expanded", "true");
+                    }
                     renderInventory(document.getElementById("searchInput").value);
                     renderSummary();
                 });
@@ -5311,6 +5490,12 @@
                         state.stockMoves.push(move);
                     }
                     document.getElementById("applyUsageModal").hidden = true;
+                    const smSec = document.getElementById("stockMovesSection");
+                    if (smSec && !smSec.classList.contains("open")) {
+                        smSec.classList.add("open");
+                        const tog = smSec.querySelector(".collapse-toggle");
+                        if (tog) tog.setAttribute("aria-expanded", "true");
+                    }
                     renderInventory(document.getElementById("searchInput").value);
                     renderSummary();
                 });
