@@ -6010,7 +6010,7 @@ window.CostingSync = new CostingSyncManager();
                     state.materials = await dbGetAll("materials");
                     state.recipes = await dbGetAll("recipes");
                     state.stockMoves = await dbGetAll("stockMoves");
-                    await seedDefaultMaterialsIfEmpty();
+                    // await seedDefaultMaterialsIfEmpty();
 
                     renderSummary();
                     renderList("");
