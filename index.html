@@ -77,6 +77,7 @@
                 outline: 2px solid var(--key);
                 outline-offset: 2px;
             }
+            
 
             .crop {
                 position: fixed;
@@ -1436,6 +1437,10 @@
                     </svg>
                     <span id="privacyLabel">Privacy on</span>
                 </button>
+                <button type="button" class="privacy-btn" id="syncBtn" title="Layout Sync">
+  <span id="syncDot" style="width:8px;height:8px;border-radius:50%;display:inline-block;background:#9ca3af;margin-right:6px"></span>
+  Sync
+</button>
                 <button id="settingsBtn" class="icon-btn" title="Settings">⚙</button>
             </div>
         </header>
@@ -1972,8 +1977,196 @@
             </div>
         </div>
 
+        <div class="modal-overlay" id="syncOverlay" hidden>
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2>Costing Sync</h2>
+      <button type="button" class="modal-close" id="closeSync">×</button>
+    </div>
+    <label>Host (WebSocket URL)
+      <input type="text" id="syncHost" placeholder="ws://localhost:1234" />
+    </label>
+    <label>Sync Key (room name)
+      <input type="text" id="syncKey" placeholder="my-shop-costing" />
+    </label>
+    <p id="syncStatusText" style="font-size:0.85rem;color:var(--ink-soft)">Disconnected</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="syncDisconnectBtn" disabled>Disconnect</button>
+      <button type="button" class="btn-primary" id="syncConnectBtn">Connect</button>
+    </div>
+    <p class="hint" style="text-align:left;margin-top:8px">
+      Same Host + Sync Key on every PC. Server:
+      <code style="font-size:0.75rem">node server.js</code> (Yjs 13 + high maxPayload).
+      Use a different key than POS/Icon Print.
+    </p>
+  </div>
+</div>
+
+
+        <script type="importmap">
+{
+  "imports": {
+    "yjs": "https://esm.sh/yjs@13.6.18",
+    "y-indexeddb": "https://esm.sh/y-indexeddb@9.0.12?deps=yjs@13.6.18",
+    "y-websocket": "https://esm.sh/y-websocket@2.0.4?deps=yjs@13.6.18",
+    "y-protocols": "https://esm.sh/y-protocols@1.0.6",
+    "lib0": "https://esm.sh/lib0@0.2.99"
+  }
+}
+</script>
+<script type="module">
+import * as Y from "yjs";
+import { IndexeddbPersistence } from "y-indexeddb";
+import { WebsocketProvider } from "y-websocket";
+
+class CostingSyncManager {
+  constructor() {
+    this.ydoc = null;
+    this.provider = null;
+    this.persistence = null;
+    this.status = "disconnected";
+    this._statusHandlers = new Set();
+    this.host = localStorage.getItem("costing_sync_host") || "ws://localhost:1234";
+    this.key = localStorage.getItem("costing_sync_key") || "";
+    // Y.Maps keyed by id
+    this.yProducts = null;
+    this.yMaterials = null;
+    this.yStockMoves = null;
+    this.yRecipes = null;
+    this.yOrders = null;
+    this.ySettings = null;
+    this._onRemote = null;
+  }
+
+  onStatus(fn) {
+    this._statusHandlers.add(fn);
+    fn(this.status);
+    return () => this._statusHandlers.delete(fn);
+  }
+  _setStatus(s) {
+    this.status = s;
+    this._statusHandlers.forEach((fn) => fn(s));
+  }
+  setConfig(host, key) {
+    this.host = (host || "").trim();
+    this.key = (key || "").trim();
+    localStorage.setItem("costing_sync_host", this.host);
+    localStorage.setItem("costing_sync_key", this.key);
+  }
+  getConfig() {
+    return { host: this.host, key: this.key };
+  }
+  isConnected() {
+    return this.status === "connected";
+  }
+
+  async connect(onRemoteChange) {
+    if (!this.host || !this.key) throw new Error("Host and Sync Key required");
+    this.disconnect();
+    this._onRemote = onRemoteChange;
+    this._setStatus("connecting");
+
+    this.ydoc = new Y.Doc();
+    this.yProducts = this.ydoc.getMap("products");
+    this.yMaterials = this.ydoc.getMap("materials");
+    this.yStockMoves = this.ydoc.getMap("stockMoves");
+    this.yRecipes = this.ydoc.getMap("recipes");
+    this.yOrders = this.ydoc.getMap("orders");
+    this.ySettings = this.ydoc.getMap("settings");
+
+    this.persistence = new IndexeddbPersistence("costing_yjs_" + this.key, this.ydoc);
+    await this.persistence.whenSynced;
+
+    this.provider = new WebsocketProvider(this.host, this.key, this.ydoc, { connect: true });
+    this.provider.on("status", (e) => {
+      if (e.status === "connected") this._setStatus("connected");
+      else if (e.status === "disconnected") this._setStatus("disconnected");
+    });
+    this.provider.on("connection-error", () => this._setStatus("error"));
+
+    const emit = () => {
+      if (this._onRemote) this._onRemote(this.exportAll());
+    };
+    this.yProducts.observe(emit);
+    this.yMaterials.observe(emit);
+    this.yStockMoves.observe(emit);
+    this.yRecipes.observe(emit);
+    this.yOrders.observe(emit);
+    this.ySettings.observe(emit);
+
+    setTimeout(() => {
+      if (this.provider && this.provider.wsconnected) this._setStatus("connected");
+    }, 800);
+  }
+
+  disconnect() {
+    if (this.provider) { this.provider.destroy(); this.provider = null; }
+    if (this.persistence) { this.persistence.destroy(); this.persistence = null; }
+    if (this.ydoc) { this.ydoc.destroy(); this.ydoc = null; }
+    this.yProducts = this.yMaterials = this.yStockMoves = this.yRecipes = this.yOrders = this.ySettings = null;
+    this._setStatus("disconnected");
+  }
+
+  // Merge local arrays into Y maps (id → record). Remote wins on conflict by updatedAt if present.
+  bootstrap(local) {
+    if (!this.yProducts) return;
+    const apply = (ymap, arr, idKey = "id") => {
+      (arr || []).forEach((rec) => {
+        if (rec == null || rec[idKey] == null) return;
+        const key = String(rec[idKey]);
+        const existing = ymap.get(key);
+        if (!existing) ymap.set(key, rec);
+        else if ((rec.updatedAt || 0) > (existing.updatedAt || 0)) ymap.set(key, rec);
+      });
+    };
+    apply(this.yProducts, local.products);
+    apply(this.yMaterials, local.materials);
+    apply(this.yStockMoves, local.stockMoves);
+    apply(this.yRecipes, local.recipes);
+    apply(this.yOrders, local.orders);
+    if (local.settings) {
+      Object.keys(local.settings).forEach((k) => {
+        if (!this.ySettings.has(k)) this.ySettings.set(k, local.settings[k]);
+      });
+    }
+  }
+
+  exportAll() {
+    const toArr = (ymap) => (ymap ? Array.from(ymap.values()) : []);
+    return {
+      products: toArr(this.yProducts),
+      materials: toArr(this.yMaterials),
+      stockMoves: toArr(this.yStockMoves),
+      recipes: toArr(this.yRecipes),
+      orders: toArr(this.yOrders),
+      settings: this.ySettings ? Object.fromEntries(this.ySettings.entries()) : {},
+    };
+  }
+
+  // Call after local save
+  pushRecord(store, record) {
+    if (!this.isConnected() || !record || record.id == null) return;
+    const map = {
+      products: this.yProducts,
+      materials: this.yMaterials,
+      stockMoves: this.yStockMoves,
+      recipes: this.yRecipes,
+      orders: this.yOrders,
+    }[store];
+    if (map) map.set(String(record.id), record);
+  }
+
+  pushSetting(key, value) {
+    if (!this.isConnected() || !this.ySettings) return;
+    this.ySettings.set(key, value);
+  }
+}
+
+window.CostingSync = new CostingSyncManager();
+</script>
+
         <script>
-            (function () {
+            (async function () {
                 "use strict";
 
                 const DB_NAME = "documentingCostingDB";
@@ -3491,6 +3684,44 @@
                     renderList(document.getElementById("searchInput").value);
                     renderSummary();
                 });
+
+                async function applyRemoteCosting(remote) {
+  if (!remote) return;
+  // Upsert each store
+  for (const p of remote.products || []) {
+    await dbPut("products", p);
+  }
+  for (const m of remote.materials || []) {
+    await dbPut("materials", m);
+  }
+  for (const s of remote.stockMoves || []) {
+    await dbPut("stockMoves", s);
+  }
+  for (const r of remote.recipes || []) {
+    await dbPut("recipes", r);
+  }
+  for (const o of remote.orders || []) {
+    await dbPut("orders", o);
+  }
+  if (remote.settings) {
+    await dbSetSetting("shopName", remote.settings.shopName);
+    await dbSetSetting("currency", remote.settings.currency);
+    await dbSetSetting("defaultMargin", remote.settings.defaultMargin);
+    for (const [k, v] of Object.entries(remote.settings)) {
+        state.settings[k] = v;
+    }
+  }
+  state.products = await dbGetAll("products");
+  state.materials = await dbGetAll("materials");
+  state.stockMoves = await dbGetAll("stockMoves");
+  state.recipes = await dbGetAll("recipes");
+  state.orders = await dbGetAll("orders");
+  renderSummary();
+  renderList(document.getElementById("searchInput")?.value || "");
+  renderInventory?.(document.getElementById("searchInput")?.value || "");
+  renderOrders?.("");
+  renderRecipes?.();
+}
 
                 // ---------- Order form ----------
                 const orderModal = document.getElementById("orderModal");
@@ -5787,6 +6018,96 @@
                     console.error(err);
                     alert("Could not open local storage (IndexedDB). Try a different browser or check privacy settings.");
                 });
+               try{
+await window.CostingSync.connect(async (remote) => {
+  // merge remote into IndexedDB + state, then re-render
+  // (write remote.products etc. via dbPut, update state.*, render*)
+});
+window.CostingSync.bootstrap({
+  products: state.products, 
+  materials: state.materials,
+  stockMoves: state.stockMoves,
+  recipes: state.recipes,
+  orders: state.orders,
+  settings: state.settings,
+});
+               }catch(e){
+                 
+               }
+
+               // --- Sync UI ---
+const syncBtn = document.getElementById("syncBtn");
+const syncOverlay = document.getElementById("syncOverlay");
+const syncHost = document.getElementById("syncHost");
+const syncKey = document.getElementById("syncKey");
+const syncStatusText = document.getElementById("syncStatusText");
+const syncConnectBtn = document.getElementById("syncConnectBtn");
+const syncDisconnectBtn = document.getElementById("syncDisconnectBtn");
+const syncDot = document.getElementById("syncDot");
+const closeSync = document.getElementById("closeSync");
+
+function updateSyncUI(status) {
+  const colors = { disconnected: "#9ca3af", connecting: "#eab308", connected: "#16a34a", error: "#c1392b" };
+  if (syncDot) syncDot.style.background = colors[status] || colors.disconnected;
+  if (syncStatusText) {
+    syncStatusText.textContent = ({ disconnected: "Disconnected", connecting: "Connecting…", connected: "Connected", error: "Error" })[status] || status;
+  }
+  if (syncConnectBtn) syncConnectBtn.disabled = status === "connecting" || status === "connected";
+  if (syncDisconnectBtn) syncDisconnectBtn.disabled = status === "disconnected";
+}
+
+function openSyncModal() {
+  if (!window.CostingSync) {
+    alert("Sync module still loading — try again in a second.");
+    return;
+  }
+  const cfg = window.CostingSync.getConfig();
+  syncHost.value = cfg.host || "ws://localhost:1234";
+  syncKey.value = cfg.key || "";
+  updateSyncUI(window.CostingSync.status);
+  syncOverlay.hidden = false;
+}
+function closeSyncModal() {
+  syncOverlay.hidden = true;
+}
+
+syncBtn?.addEventListener("click", openSyncModal);
+closeSync?.addEventListener("click", closeSyncModal);
+syncOverlay?.addEventListener("click", (e) => { if (e.target === syncOverlay) closeSyncModal(); });
+
+syncConnectBtn?.addEventListener("click", async () => {
+  if (!window.CostingSync) return;
+  window.CostingSync.setConfig(syncHost.value.trim(), syncKey.value.trim());
+  try {
+    await window.CostingSync.connect(async (remote) => {
+      await applyRemoteCosting(remote);
+    });
+    window.CostingSync.bootstrap({
+      products: state.products,
+      materials: state.materials,
+      stockMoves: state.stockMoves,
+      recipes: state.recipes,
+      orders: state.orders,
+      settings: state.settings,
+    });
+  } catch (err) {
+    alert("Could not connect: " + (err.message || err));
+    updateSyncUI("error");
+  }
+});
+
+syncDisconnectBtn?.addEventListener("click", () => {
+  window.CostingSync?.disconnect();
+});
+
+function wireSyncStatus() {
+  if (!window.CostingSync) {
+    setTimeout(wireSyncStatus, 150);
+    return;
+  }
+  window.CostingSync.onStatus(updateSyncUI);
+}
+wireSyncStatus();
             })();
         </script>
         <script>
