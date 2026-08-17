@@ -6023,22 +6023,7 @@ window.CostingSync = new CostingSyncManager();
                     console.error(err);
                     alert("Could not open local storage (IndexedDB). Try a different browser or check privacy settings.");
                 });
-               try{
-await window.CostingSync.connect(async (remote) => {
-  // merge remote into IndexedDB + state, then re-render
-  // (write remote.products etc. via dbPut, update state.*, render*)
-});
-window.CostingSync.bootstrap({
-  products: state.products, 
-  materials: state.materials,
-  stockMoves: state.stockMoves,
-  recipes: state.recipes,
-  orders: state.orders,
-  settings: state.settings,
-});
-               }catch(e){
-                 
-               }
+               initSync();
 
                // --- Sync UI ---
 const syncBtn = document.getElementById("syncBtn");
@@ -6081,7 +6066,15 @@ closeSync?.addEventListener("click", closeSyncModal);
 syncOverlay?.addEventListener("click", (e) => { if (e.target === syncOverlay) closeSyncModal(); });
 
 syncConnectBtn?.addEventListener("click", async () => {
-  if (!window.CostingSync) return;
+  initSync()
+});
+
+syncDisconnectBtn?.addEventListener("click", () => {
+  window.CostingSync?.disconnect();
+});
+
+async function initSync(){
+    if (!window.CostingSync) return;
   window.CostingSync.setConfig(syncHost.value.trim(), syncKey.value.trim());
   try {
     await window.CostingSync.connect(async (remote) => {
@@ -6099,11 +6092,7 @@ syncConnectBtn?.addEventListener("click", async () => {
     alert("Could not connect: " + (err.message || err));
     updateSyncUI("error");
   }
-});
-
-syncDisconnectBtn?.addEventListener("click", () => {
-  window.CostingSync?.disconnect();
-});
+}
 
 function wireSyncStatus() {
   if (!window.CostingSync) {
