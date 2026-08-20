@@ -306,6 +306,65 @@
                 text-transform: none;
                 letter-spacing: 0;
             }
+            .category-margin-bar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin: 0 0 14px;
+                align-items: stretch;
+            }
+            .category-margin-bar:empty {
+                display: none;
+            }
+            .cat-chip {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 8px 12px;
+                min-width: 140px;
+                flex: 1 1 140px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .cat-chip .cat-name {
+                font-size: 0.68rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--ink-soft);
+            }
+            .cat-chip .cat-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 14px;
+                align-items: baseline;
+            }
+            .cat-chip .cat-stat {
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+            }
+            .cat-chip .cat-stat .label {
+                font-size: 0.6rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--ink-soft);
+            }
+            .cat-chip .cat-stat .value {
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--ink);
+            }
+            .cat-chip.service {
+                border-color: rgba(30, 122, 76, 0.35);
+                background: rgba(30, 122, 76, 0.06);
+            }
+            .cat-chip.merchandise {
+                border-color: rgba(0, 174, 239, 0.35);
+                background: rgba(0, 174, 239, 0.06);
+            }
 
             .product-list,
             .order-list {
@@ -1453,6 +1512,7 @@
                         <div class="chip" title="Weighted average margin on sellable units">Avg margin<b id="chipMargin" class="mono priv-value pct">—</b></div>
                     </div>
                 </section>
+                <div id="categoryMarginBar" class="category-margin-bar" aria-label="Average margin by category"></div>
                 <section id="productList" class="product-list"></section>
                 <p id="emptyState" class="empty-state" hidden>No products yet. Add your first one — business cards, tarpaulin, photocopies, mugs, shirts, whatever you print or sell.</p>
             </div>
@@ -1620,19 +1680,6 @@
                     <datalist id="categoryList">
                         <option value="Service"></option>
                         <option value="Merchandise"></option>
-                        <option value="Business Cards"></option>
-                        <option value="Flyers / Leaflets"></option>
-                        <option value="Tarpaulin / Banner"></option>
-                        <option value="Photocopy / Documents"></option>
-                        <option value="Lamination"></option>
-                        <option value="Binding"></option>
-                        <option value="Supplies"></option>
-                        <option value="School Supplies"></option>
-                        <option value="T-Shirt Printing"></option>
-                        <option value="Mugs / Tumblers"></option>
-                        <option value="Stickers"></option>
-                        <option value="Invitations"></option>
-                        <option value="Other Goods"></option>
                     </datalist>
                 </label>
                 <label>
@@ -2447,7 +2494,7 @@
                     document.getElementById("productsPanel").classList.toggle("active", tab === "products");
                     document.getElementById("ordersPanel").classList.toggle("active", tab === "orders");
                     document.getElementById("inventoryPanel").classList.toggle("active", tab === "inventory");
-                    const ph = tab === "products" ? "Search product or category…" : tab === "orders" ? "Search order, platform, ref…" : "Search material…";
+                    const ph = tab === "products" ? "Search product or category…" : tab === "orders" ? "Search order, platform, ref…" : "Search material, product, or category…";
                     document.getElementById("searchInput").placeholder = ph;
                     if (tab === "products") {
                         renderList(document.getElementById("searchInput").value);
@@ -2523,6 +2570,8 @@
                     let totalRevenue = 0;
                     let marginWeighted = 0;
                     let unitsSum = 0;
+                    // Per-category rollups (Service vs Merchandise, etc.)
+                    const byCat = {};
 
                     state.products.forEach((p) => {
                         const t = computeTotals(p);
@@ -2541,6 +2590,19 @@
                             marginWeighted += t.margin * units;
                             unitsSum += units;
                         }
+
+                        const catKey = (p.category || "").trim() || "Uncategorized";
+                        if (!byCat[catKey]) {
+                            byCat[catKey] = { count: 0, cost: 0, revenue: 0, marginWeighted: 0, unitsSum: 0 };
+                        }
+                        const bucket = byCat[catKey];
+                        bucket.count += 1;
+                        bucket.cost += units * (t.totalCost || 0);
+                        bucket.revenue += units * (Number(p.sellingPrice) || 0);
+                        if (units > 0 && isFinite(t.margin)) {
+                            bucket.marginWeighted += t.margin * units;
+                            bucket.unitsSum += units;
+                        }
                     });
                     const totalProfit = totalRevenue - totalCost;
                     const avgMargin = unitsSum ? marginWeighted / unitsSum : 0;
@@ -2557,6 +2619,41 @@
                     [costEl, revEl, profitEl, marginEl].forEach((el) => {
                         if (el && el.classList.contains("priv-value")) bindPeek(el);
                     });
+
+                    // Category margin bar — Service / Merchandise first, then others
+                    const catBar = document.getElementById("categoryMarginBar");
+                    if (catBar) {
+                        const preferred = ["Service", "Merchandise"];
+                        const keys = Object.keys(byCat).sort((a, b) => {
+                            const ia = preferred.indexOf(a);
+                            const ib = preferred.indexOf(b);
+                            if (ia >= 0 && ib >= 0) return ia - ib;
+                            if (ia >= 0) return -1;
+                            if (ib >= 0) return 1;
+                            if (a === "Uncategorized") return 1;
+                            if (b === "Uncategorized") return -1;
+                            return a.localeCompare(b);
+                        });
+                        catBar.innerHTML = "";
+                        keys.forEach((name) => {
+                            const b = byCat[name];
+                            const profit = b.revenue - b.cost;
+                            const avg = b.unitsSum ? b.marginWeighted / b.unitsSum : null;
+                            const slug = name.toLowerCase().replace(/\s+/g, "-");
+                            const tone = name === "Service" ? "service" : name === "Merchandise" ? "merchandise" : "";
+                            const card = document.createElement("div");
+                            card.className = "cat-chip" + (tone ? " " + tone : "");
+                            card.innerHTML = `
+                              <span class="cat-name">${escapeHtml(name)} · ${b.count} item${b.count === 1 ? "" : "s"}</span>
+                              <div class="cat-row">
+                                <div class="cat-stat"><span class="label">Avg margin</span><span class="value priv-value pct">${avg != null ? fmtPct(avg) : "—"}</span></div>
+                                <div class="cat-stat"><span class="label">Profit</span><span class="value priv-value amt">${fmtMoney(profit)}</span></div>
+                                <div class="cat-stat"><span class="label">Revenue</span><span class="value priv-value amt">${fmtMoney(b.revenue)}</span></div>
+                              </div>`;
+                            card.querySelectorAll(".priv-value").forEach(bindPeek);
+                            catBar.appendChild(card);
+                        });
+                    }
                 }
 
                 function sortProductsInPlace() {
@@ -4785,7 +4882,21 @@
                     const list = document.getElementById("materialList");
                     list.innerHTML = "";
                     let mats = state.materials.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-                    if (q) mats = mats.filter((m) => (m.name || "").toLowerCase().includes(q) || (m.unit || "").toLowerCase().includes(q) || (m.notes || "").toLowerCase().includes(q));
+                    if (q) {
+                        // Match material fields OR materials used by products whose name/category matches
+                        const matIdsFromProducts = new Set();
+                        state.products.forEach((p) => {
+                            const nameHit = (p.name || "").toLowerCase().includes(q);
+                            const catHit = (p.category || "").toLowerCase().includes(q);
+                            if (!nameHit && !catHit) return;
+                            recipeFromProduct(p).forEach((ln) => {
+                                if (ln.materialId) matIdsFromProducts.add(ln.materialId);
+                            });
+                        });
+                        mats = mats.filter(
+                            (m) => (m.name || "").toLowerCase().includes(q) || (m.unit || "").toLowerCase().includes(q) || (m.notes || "").toLowerCase().includes(q) || matIdsFromProducts.has(m.id),
+                        );
+                    }
 
                     const posDemand = state.posDemandByMaterial || {};
                     const classified = mats.map((mat) => ({ mat, info: classifyMaterial(mat, posDemand) }));
@@ -4926,7 +5037,7 @@
                     list.querySelectorAll(".priv-value").forEach(bindPeek);
 
                     renderStockTrend();
-                    renderRecipes();
+                    renderRecipes(filterText);
                     renderStockMoves(filterText);
 
                     // After POS demand loads the first time, refresh once so cover/movement use sales
@@ -4990,7 +5101,14 @@
                         const matName = mat ? mat.name || "" : "";
                         const note = m.note || "";
                         const src = m.source || "";
-                        return matName.toLowerCase().includes(q) || note.toLowerCase().includes(q) || src.toLowerCase().includes(q) || String(m.materialId).includes(q);
+                        let productHit = false;
+                        if (m.productId != null) {
+                            const p = state.products.find((x) => x.id === m.productId);
+                            if (p) {
+                                productHit = (p.name || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q);
+                            }
+                        }
+                        return matName.toLowerCase().includes(q) || note.toLowerCase().includes(q) || src.toLowerCase().includes(q) || String(m.materialId).includes(q) || productHit;
                     });
 
                     list.innerHTML = "";
@@ -5100,11 +5218,29 @@
                     return Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, "");
                 }
 
-                function renderRecipes() {
+                function renderRecipes(filterText) {
                     const list = document.getElementById("recipeList");
                     list.innerHTML = "";
-                    const prods = state.products.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                    const q = (filterText || "").trim().toLowerCase();
+                    const prods = state.products
+                        .slice()
+                        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                        .filter((p) => {
+                            if (!q) return true;
+                            return (
+                                (p.name || "").toLowerCase().includes(q) ||
+                                (p.category || "").toLowerCase().includes(q) ||
+                                recipeFromProduct(p).some((ln) => {
+                                    const mat = state.materials.find((m) => m.id === ln.materialId);
+                                    return mat && (mat.name || "").toLowerCase().includes(q);
+                                })
+                            );
+                        });
                     let any = false;
+                    let anyRecipeAtAll = false;
+                    state.products.forEach((p) => {
+                        if (recipeFromProduct(p).length) anyRecipeAtAll = true;
+                    });
                     prods.forEach((p) => {
                         const lines = recipeFromProduct(p);
                         if (!lines.length) return;
@@ -5142,7 +5278,18 @@
                         });
                         list.appendChild(card);
                     });
-                    document.getElementById("emptyRecipes").hidden = any;
+                    const emptyEl = document.getElementById("emptyRecipes");
+                    if (emptyEl) {
+                        if (!anyRecipeAtAll) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No material links yet. Edit a product → cost breakdown → choose material and inv qty.";
+                        } else if (!any) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No recipes match the current search (try product name or category: Service / Merchandise).";
+                        } else {
+                            emptyEl.hidden = true;
+                        }
+                    }
                 }
 
                 function openMaterialForm(mat) {
