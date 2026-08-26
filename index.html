@@ -306,6 +306,65 @@
                 text-transform: none;
                 letter-spacing: 0;
             }
+            .category-margin-bar {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin: 0 0 14px;
+                align-items: stretch;
+            }
+            .category-margin-bar:empty {
+                display: none;
+            }
+            .cat-chip {
+                background: var(--card);
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                padding: 8px 12px;
+                min-width: 140px;
+                flex: 1 1 140px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .cat-chip .cat-name {
+                font-size: 0.68rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--ink-soft);
+            }
+            .cat-chip .cat-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px 14px;
+                align-items: baseline;
+            }
+            .cat-chip .cat-stat {
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+            }
+            .cat-chip .cat-stat .label {
+                font-size: 0.6rem;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--ink-soft);
+            }
+            .cat-chip .cat-stat .value {
+                font-family: "IBM Plex Mono", monospace;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--ink);
+            }
+            .cat-chip.service {
+                border-color: rgba(30, 122, 76, 0.35);
+                background: rgba(30, 122, 76, 0.06);
+            }
+            .cat-chip.merchandise {
+                border-color: rgba(0, 174, 239, 0.35);
+                background: rgba(0, 174, 239, 0.06);
+            }
 
             .product-list,
             .order-list {
@@ -1453,8 +1512,19 @@
                         <div class="chip" title="Weighted average margin on sellable units">Avg margin<b id="chipMargin" class="mono priv-value pct">—</b></div>
                     </div>
                 </section>
+                <div id="categoryMarginBar" class="category-margin-bar" aria-label="Average margin by category"></div>
+                <div class="inv-filters" id="productCategoryFilters" style="margin-bottom: 12px">
+                    <div class="inv-filter-row">
+                        <span class="inv-filter-label">Category</span>
+                        <button type="button" class="inv-filter-chip active" data-prod-cat="all">All</button>
+                        <button type="button" class="inv-filter-chip" data-prod-cat="Service">Service</button>
+                        <button type="button" class="inv-filter-chip" data-prod-cat="Merchandise">Merchandise</button>
+                        <button type="button" class="inv-filter-chip" data-prod-cat="Uncategorized">Uncategorized</button>
+                    </div>
+                    <p class="inv-filter-meta">Service = high-margin jobs (print, laminate, copy). Merchandise = resale goods (school supplies, mugs).</p>
+                </div>
                 <section id="productList" class="product-list"></section>
-                <p id="emptyState" class="empty-state" hidden>No products yet. Add your first one — business cards, tarpaulin, photocopies, mugs, shirts, whatever you print or sell.</p>
+                <p id="emptyState" class="empty-state" hidden>No products yet. Add your first one — assign Service or Merchandise so margins stay separate.</p>
             </div>
 
             <!-- ORDERS PANEL -->
@@ -1615,20 +1685,11 @@
                 </div>
                 <label>
                     Category
-                    <input id="fCategory" type="text" list="categoryList" placeholder="e.g. Printing, T-Shirts, Mugs, Documents" />
+                    <span style="font-weight: 400; color: var(--ink-soft)">(Service or Merchandise — drives margin reports &amp; forecast)</span>
+                    <input id="fCategory" type="text" list="categoryList" placeholder="Service or Merchandise" />
                     <datalist id="categoryList">
-                        <option value="Business Cards"></option>
-                        <option value="Flyers / Leaflets"></option>
-                        <option value="Tarpaulin / Banner"></option>
-                        <option value="Photocopy / Documents"></option>
-                        <option value="Lamination"></option>
-                        <option value="Binding"></option>
-                        <option value="Supplies"></option>
-                        <option value="T-Shirt Printing"></option>
-                        <option value="Mugs / Tumblers"></option>
-                        <option value="Stickers"></option>
-                        <option value="Invitations"></option>
-                        <option value="Other Goods"></option>
+                        <option value="Service"></option>
+                        <option value="Merchandise"></option>
                     </datalist>
                 </label>
                 <label>
@@ -1794,6 +1855,15 @@
                     <input id="setDefaultMargin" type="number" step="0.1" min="0" max="99" placeholder="e.g. 30" />
                 </label>
                 <p style="font-size: 0.75rem; color: var(--ink-soft); margin: 0">In privacy mode, prices stay visible but cost, profit, margin, and markup are always hidden until you tap to peek.</p>
+                <hr />
+                <p style="font-size: 0.75rem; color: var(--ink-soft); margin: 0 0 6px; font-weight: 600">Little Ledger POS link</p>
+                <label class="checkbox-row" style="font-weight: 500; color: var(--ink)">
+                    <input id="setLinkPos" type="checkbox" />
+                    Link Little Ledger POS (same domain)
+                </label>
+                <p style="font-size: 0.72rem; color: var(--ink-soft); margin: 0">
+                    Off by default. When on: POS consolidation, demand from POS sales, and renaming products syncs quick-presets / sale lines in Little Ledger. Turn on only if both apps share this origin.
+                </p>
                 <hr />
                 <p style="font-size: 0.75rem; color: var(--ink-soft); margin: 0 0 6px; font-weight: 600">Backup</p>
                 <button id="exportFullJson" class="btn-secondary">Export full backup (.json)</button>
@@ -1991,9 +2061,10 @@
                     invStockFilter: "all",
                     invMoveFilter: "all",
                     stockMoveTypeFilter: "all",
+                    productCategoryFilter: "all", // all | Service | Merchandise | Uncategorized
                     posDemandByMaterial: null, // { [materialId]: qty in lookback } from POS sales excluding excludeFromForecast
                     posDemandLoadedAt: 0,
-                    settings: { shopName: "Documenting", currency: "₱", defaultMargin: 30 },
+                    settings: { shopName: "Documenting", currency: "₱", defaultMargin: 30, linkPos: false },
                     editingId: null,
                     editingOrderId: null,
                     editingMaterialId: null,
@@ -2443,7 +2514,12 @@
                     document.getElementById("productsPanel").classList.toggle("active", tab === "products");
                     document.getElementById("ordersPanel").classList.toggle("active", tab === "orders");
                     document.getElementById("inventoryPanel").classList.toggle("active", tab === "inventory");
-                    const ph = tab === "products" ? "Search product or category…" : tab === "orders" ? "Search order, platform, ref…" : "Search material…";
+                    const ph =
+                        tab === "products"
+                            ? "Search product or category…"
+                            : tab === "orders"
+                              ? "Search order, platform, ref…"
+                              : "Search material, product, or category…";
                     document.getElementById("searchInput").placeholder = ph;
                     if (tab === "products") {
                         renderList(document.getElementById("searchInput").value);
@@ -2519,6 +2595,8 @@
                     let totalRevenue = 0;
                     let marginWeighted = 0;
                     let unitsSum = 0;
+                    // Per-category rollups (Service vs Merchandise, etc.)
+                    const byCat = {};
 
                     state.products.forEach((p) => {
                         const t = computeTotals(p);
@@ -2537,6 +2615,19 @@
                             marginWeighted += t.margin * units;
                             unitsSum += units;
                         }
+
+                        const catKey = (p.category || "").trim() || "Uncategorized";
+                        if (!byCat[catKey]) {
+                            byCat[catKey] = { count: 0, cost: 0, revenue: 0, marginWeighted: 0, unitsSum: 0 };
+                        }
+                        const bucket = byCat[catKey];
+                        bucket.count += 1;
+                        bucket.cost += units * (t.totalCost || 0);
+                        bucket.revenue += units * (Number(p.sellingPrice) || 0);
+                        if (units > 0 && isFinite(t.margin)) {
+                            bucket.marginWeighted += t.margin * units;
+                            bucket.unitsSum += units;
+                        }
                     });
                     const totalProfit = totalRevenue - totalCost;
                     const avgMargin = unitsSum ? marginWeighted / unitsSum : 0;
@@ -2553,6 +2644,59 @@
                     [costEl, revEl, profitEl, marginEl].forEach((el) => {
                         if (el && el.classList.contains("priv-value")) bindPeek(el);
                     });
+
+                    // Category margin bar — Service / Merchandise first, then others
+                    const catBar = document.getElementById("categoryMarginBar");
+                    if (catBar) {
+                        const preferred = ["Service", "Merchandise"];
+                        const keys = Object.keys(byCat).sort((a, b) => {
+                            const ia = preferred.indexOf(a);
+                            const ib = preferred.indexOf(b);
+                            if (ia >= 0 && ib >= 0) return ia - ib;
+                            if (ia >= 0) return -1;
+                            if (ib >= 0) return 1;
+                            if (a === "Uncategorized") return 1;
+                            if (b === "Uncategorized") return -1;
+                            return a.localeCompare(b);
+                        });
+                        catBar.innerHTML = "";
+                        keys.forEach((name) => {
+                            const b = byCat[name];
+                            const profit = b.revenue - b.cost;
+                            const avg = b.unitsSum ? b.marginWeighted / b.unitsSum : null;
+                            const slug = name.toLowerCase().replace(/\s+/g, "-");
+                            const tone = name === "Service" ? "service" : name === "Merchandise" ? "merchandise" : "";
+                            const card = document.createElement("button");
+                            card.type = "button";
+                            card.className = "cat-chip" + (tone ? " " + tone : "");
+                            card.title = "Filter products by " + name;
+                            card.style.textAlign = "left";
+                            card.style.cursor = "pointer";
+                            card.innerHTML = `
+                              <span class="cat-name">${escapeHtml(name)} · ${b.count} item${b.count === 1 ? "" : "s"}</span>
+                              <div class="cat-row">
+                                <div class="cat-stat"><span class="label">Avg margin</span><span class="value priv-value pct">${avg != null ? fmtPct(avg) : "—"}</span></div>
+                                <div class="cat-stat"><span class="label">Profit</span><span class="value priv-value amt">${fmtMoney(profit)}</span></div>
+                                <div class="cat-stat"><span class="label">Revenue</span><span class="value priv-value amt">${fmtMoney(b.revenue)}</span></div>
+                              </div>`;
+                            card.querySelectorAll(".priv-value").forEach(bindPeek);
+                            card.addEventListener("click", () => {
+                                state.productCategoryFilter =
+                                    state.productCategoryFilter === name ? "all" : name;
+                                if (state.activeTab !== "products") {
+                                    const tabBtn = document.querySelector('.tab-btn[data-tab="products"]');
+                                    if (tabBtn) tabBtn.click();
+                                    else {
+                                        state.activeTab = "products";
+                                        renderList(document.getElementById("searchInput").value);
+                                    }
+                                } else {
+                                    renderList(document.getElementById("searchInput").value);
+                                }
+                            });
+                            catBar.appendChild(card);
+                        });
+                    }
                 }
 
                 function sortProductsInPlace() {
@@ -2647,15 +2791,53 @@
                     });
                 }
 
+                function syncProductCategoryChips() {
+                    document.querySelectorAll("[data-prod-cat]").forEach((b) => {
+                        const on = b.getAttribute("data-prod-cat") === (state.productCategoryFilter || "all");
+                        b.classList.toggle("active", on);
+                        b.classList.remove("good", "cyan", "warn", "bad");
+                        if (on) {
+                            const v = state.productCategoryFilter;
+                            if (v === "Service") b.classList.add("good");
+                            else if (v === "Merchandise") b.classList.add("cyan");
+                            else if (v === "Uncategorized") b.classList.add("warn");
+                        }
+                    });
+                }
+
+                function bindProductCategoryFilters() {
+                    const root = document.getElementById("productCategoryFilters");
+                    if (!root || root.dataset.bound === "1") return;
+                    root.dataset.bound = "1";
+                    root.addEventListener("click", (e) => {
+                        const btn = e.target.closest("[data-prod-cat]");
+                        if (!btn) return;
+                        state.productCategoryFilter = btn.getAttribute("data-prod-cat") || "all";
+                        renderList(document.getElementById("searchInput").value);
+                    });
+                }
+
+                function productMatchesCategoryFilter(p) {
+                    const f = state.productCategoryFilter || "all";
+                    if (f === "all") return true;
+                    const cat = (p.category || "").trim();
+                    if (f === "Uncategorized") return !cat;
+                    return cat.toLowerCase() === f.toLowerCase();
+                }
+
                 function renderList(filterText) {
+                    bindProductCategoryFilters();
+                    syncProductCategoryChips();
                     const listEl = document.getElementById("productList");
                     const emptyEl = document.getElementById("emptyState");
                     const filter = (filterText || "").trim().toLowerCase();
-                    const filterActive = !!filter;
+                    const catFilterOn = (state.productCategoryFilter || "all") !== "all";
+                    const filterActive = !!filter || catFilterOn;
 
                     sortProductsInPlace();
 
                     const items = state.products.filter((p) => {
+                        if (!productMatchesCategoryFilter(p)) return false;
                         if (!filter) return true;
                         return (p.name || "").toLowerCase().includes(filter) || (p.category || "").toLowerCase().includes(filter);
                     });
@@ -2667,7 +2849,9 @@
                     if (state.products.length > 0 && items.length === 0) {
                         const p = document.createElement("p");
                         p.className = "empty-state";
-                        p.textContent = "No products match your search.";
+                        p.textContent = catFilterOn
+                            ? `No products in “${state.productCategoryFilter}”. Clear the category filter or assign categories on products.`
+                            : "No products match your search.";
                         listEl.appendChild(p);
                         return;
                     }
@@ -3283,6 +3467,7 @@
                 }
 
                 async function syncPosPresetsAfterProductRename(oldName, newName, alsoSaleLines) {
+                    if (!isPosLinkEnabled()) return { presets: 0, saleLines: 0, skipped: true };
                     const oldKey = (oldName || "").toLowerCase().trim();
                     const newKey = (newName || "").toLowerCase().trim();
                     if (!oldKey || oldKey === newKey) return { presets: 0, saleLines: 0 };
@@ -3355,6 +3540,7 @@
                 }
 
                 async function countPosPresetLinks(oldName) {
+                    if (!isPosLinkEnabled()) return 0;
                     const oldKey = (oldName || "").toLowerCase().trim();
                     if (!oldKey) return 0;
                     try {
@@ -3782,10 +3968,15 @@
 
                 // ---------- Settings ----------
                 const settingsModal = document.getElementById("settingsModal");
+                function isPosLinkEnabled() {
+                    return !!state.settings.linkPos;
+                }
+
                 document.getElementById("settingsBtn").addEventListener("click", () => {
                     document.getElementById("setShopName").value = state.settings.shopName;
                     document.getElementById("setCurrency").value = state.settings.currency;
                     document.getElementById("setDefaultMargin").value = state.settings.defaultMargin != null ? state.settings.defaultMargin : "";
+                    document.getElementById("setLinkPos").checked = !!state.settings.linkPos;
                     settingsModal.hidden = false;
                 });
                 // Do not close on overlay click — preserves typed settings
@@ -3798,10 +3989,12 @@
                     state.settings.currency = document.getElementById("setCurrency").value.trim() || "₱";
                     const dm = document.getElementById("setDefaultMargin").value;
                     state.settings.defaultMargin = dm !== "" ? parseFloat(dm) : null;
+                    state.settings.linkPos = !!document.getElementById("setLinkPos").checked;
 
                     await dbSetSetting("shopName", state.settings.shopName);
                     await dbSetSetting("currency", state.settings.currency);
                     await dbSetSetting("defaultMargin", state.settings.defaultMargin);
+                    await dbSetSetting("linkPos", state.settings.linkPos);
 
                     document.getElementById("shopNameLabel").textContent = state.settings.shopName;
                     settingsModal.hidden = true;
@@ -3809,7 +4002,29 @@
                     renderList(document.getElementById("searchInput").value);
                     renderOrderSummary();
                     renderOrders(document.getElementById("searchInput").value);
+                    if (state.activeTab === "inventory") {
+                        renderInventory(document.getElementById("searchInput").value);
+                    }
+                    updatePosLinkUi();
                 });
+
+                function updatePosLinkUi() {
+                    const sec = document.getElementById("posConsolidateSection");
+                    if (!sec) return;
+                    const on = isPosLinkEnabled();
+                    sec.style.opacity = on ? "" : "0.55";
+                    const hint = sec.querySelector(".collapse-hint");
+                    if (hint) {
+                        hint.dataset.defaultHint =
+                            hint.dataset.defaultHint || hint.textContent;
+                        if (!on) {
+                            hint.textContent =
+                                "POS link is off (Settings). Turn on “Link Little Ledger POS” to pull unrecorded sales from the same domain.";
+                        } else {
+                            hint.textContent = hint.dataset.defaultHint;
+                        }
+                    }
+                }
 
                 function downloadCsv(rows, filename) {
                     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -3948,6 +4163,7 @@
                             shopName: state.settings.shopName,
                             currency: state.settings.currency,
                             defaultMargin: state.settings.defaultMargin,
+                            linkPos: !!state.settings.linkPos,
                         },
                     };
                     const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
@@ -4017,6 +4233,11 @@
                             if (data.settings.defaultMargin !== undefined) {
                                 state.settings.defaultMargin = data.settings.defaultMargin;
                                 await dbSetSetting("defaultMargin", state.settings.defaultMargin);
+                            }
+                            if (data.settings.linkPos !== undefined) {
+                                state.settings.linkPos = !!data.settings.linkPos;
+                                await dbSetSetting("linkPos", state.settings.linkPos);
+                                updatePosLinkUi();
                             }
                         }
 
@@ -4572,6 +4793,11 @@
                  */
                 async function refreshPosDemandByMaterial(force) {
                     const now = Date.now();
+                    if (!isPosLinkEnabled()) {
+                        state.posDemandByMaterial = {};
+                        state.posDemandLoadedAt = now;
+                        return state.posDemandByMaterial;
+                    }
                     if (!force && state.posDemandByMaterial && now - (state.posDemandLoadedAt || 0) < 60000) {
                         return state.posDemandByMaterial;
                     }
@@ -4786,7 +5012,25 @@
                     const list = document.getElementById("materialList");
                     list.innerHTML = "";
                     let mats = state.materials.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-                    if (q) mats = mats.filter((m) => (m.name || "").toLowerCase().includes(q) || (m.unit || "").toLowerCase().includes(q) || (m.notes || "").toLowerCase().includes(q));
+                    if (q) {
+                        // Match material fields OR materials used by products whose name/category matches
+                        const matIdsFromProducts = new Set();
+                        state.products.forEach((p) => {
+                            const nameHit = (p.name || "").toLowerCase().includes(q);
+                            const catHit = (p.category || "").toLowerCase().includes(q);
+                            if (!nameHit && !catHit) return;
+                            recipeFromProduct(p).forEach((ln) => {
+                                if (ln.materialId) matIdsFromProducts.add(ln.materialId);
+                            });
+                        });
+                        mats = mats.filter(
+                            (m) =>
+                                (m.name || "").toLowerCase().includes(q) ||
+                                (m.unit || "").toLowerCase().includes(q) ||
+                                (m.notes || "").toLowerCase().includes(q) ||
+                                matIdsFromProducts.has(m.id),
+                        );
+                    }
 
                     const posDemand = state.posDemandByMaterial || {};
                     const classified = mats.map((mat) => ({ mat, info: classifyMaterial(mat, posDemand) }));
@@ -4927,7 +5171,7 @@
                     list.querySelectorAll(".priv-value").forEach(bindPeek);
 
                     renderStockTrend();
-                    renderRecipes();
+                    renderRecipes(filterText);
                     renderStockMoves(filterText);
 
                     // After POS demand loads the first time, refresh once so cover/movement use sales
@@ -4991,7 +5235,21 @@
                         const matName = mat ? mat.name || "" : "";
                         const note = m.note || "";
                         const src = m.source || "";
-                        return matName.toLowerCase().includes(q) || note.toLowerCase().includes(q) || src.toLowerCase().includes(q) || String(m.materialId).includes(q);
+                        let productHit = false;
+                        if (m.productId != null) {
+                            const p = state.products.find((x) => x.id === m.productId);
+                            if (p) {
+                                productHit =
+                                    (p.name || "").toLowerCase().includes(q) || (p.category || "").toLowerCase().includes(q);
+                            }
+                        }
+                        return (
+                            matName.toLowerCase().includes(q) ||
+                            note.toLowerCase().includes(q) ||
+                            src.toLowerCase().includes(q) ||
+                            String(m.materialId).includes(q) ||
+                            productHit
+                        );
                     });
 
                     list.innerHTML = "";
@@ -5101,11 +5359,29 @@
                     return Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, "");
                 }
 
-                function renderRecipes() {
+                function renderRecipes(filterText) {
                     const list = document.getElementById("recipeList");
                     list.innerHTML = "";
-                    const prods = state.products.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+                    const q = (filterText || "").trim().toLowerCase();
+                    const prods = state.products
+                        .slice()
+                        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                        .filter((p) => {
+                            if (!q) return true;
+                            return (
+                                (p.name || "").toLowerCase().includes(q) ||
+                                (p.category || "").toLowerCase().includes(q) ||
+                                recipeFromProduct(p).some((ln) => {
+                                    const mat = state.materials.find((m) => m.id === ln.materialId);
+                                    return mat && (mat.name || "").toLowerCase().includes(q);
+                                })
+                            );
+                        });
                     let any = false;
+                    let anyRecipeAtAll = false;
+                    state.products.forEach((p) => {
+                        if (recipeFromProduct(p).length) anyRecipeAtAll = true;
+                    });
                     prods.forEach((p) => {
                         const lines = recipeFromProduct(p);
                         if (!lines.length) return;
@@ -5143,7 +5419,18 @@
                         });
                         list.appendChild(card);
                     });
-                    document.getElementById("emptyRecipes").hidden = any;
+                    const emptyEl = document.getElementById("emptyRecipes");
+                    if (emptyEl) {
+                        if (!anyRecipeAtAll) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No material links yet. Edit a product → cost breakdown → choose material and inv qty.";
+                        } else if (!any) {
+                            emptyEl.hidden = false;
+                            emptyEl.textContent = "No recipes match the current search (try product name or category: Service / Merchandise).";
+                        } else {
+                            emptyEl.hidden = true;
+                        }
+                    }
                 }
 
                 function openMaterialForm(mat) {
@@ -5672,6 +5959,10 @@
                 }
 
                 async function loadPosSalesFromDB() {
+                    if (!isPosLinkEnabled()) {
+                        alert("POS link is off. Open Settings and enable “Link Little Ledger POS”, then try again.");
+                        return;
+                    }
                     try {
                         const pdb = await openPosDBReadonly();
                         if (!pdb.objectStoreNames.contains("transactions")) {
@@ -5745,13 +6036,21 @@
                 async function init() {
                     db = await openDatabase();
 
-                    const [shopName, currency, defaultMargin] = await Promise.all([dbGetSetting("shopName"), dbGetSetting("currency"), dbGetSetting("defaultMargin")]);
+                    const [shopName, currency, defaultMargin, linkPos] = await Promise.all([
+                        dbGetSetting("shopName"),
+                        dbGetSetting("currency"),
+                        dbGetSetting("defaultMargin"),
+                        dbGetSetting("linkPos"),
+                    ]);
                     if (shopName !== undefined) state.settings.shopName = shopName;
                     if (currency !== undefined) state.settings.currency = currency;
                     if (defaultMargin !== undefined) state.settings.defaultMargin = defaultMargin;
+                    // Off by default — only true when explicitly stored
+                    state.settings.linkPos = linkPos === true || linkPos === "true" || linkPos === 1;
 
                     document.getElementById("shopNameLabel").textContent = state.settings.shopName;
                     setPrivacy(true);
+                    updatePosLinkUi();
 
                     state.products = await dbGetAll("products");
                     // ensure priceHistory exists
