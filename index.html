@@ -3582,6 +3582,8 @@
                         .map((it) => {
                             const sugGross = hasTarget ? fmtSuggest(it.unitCostGross, targetMargin, targetMarkup) : "—";
                             const sugNet = hasTarget ? fmtSuggest(it.unitCostNet, targetMargin, targetMarkup) : "—";
+                            const qtyN = Number(it.qty) || 0;
+                            const perPcGoodsOnly = qtyN > 0 ? (Number(it.grossGoods) || 0) / qtyN : 0;
                             return `<tr>
               <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
               <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
@@ -3589,6 +3591,7 @@
               <td class="priv-value amt">${fmtMoney(it.tipShare || 0)}</td>
               <td class="priv-value amt">${fmtMoney(it.netGoods)}</td>
               <td class="priv-value amt">${fmtMoney(it.netShipShare)}</td>
+              <td class="priv-value amt" style="font-weight:600">${fmtMoney(perPcGoodsOnly)}</td>
               <td class="priv-value amt">${fmtMoney(it.unitCostGross)}</td>
               <td class="priv-value amt">${fmtMoney(it.unitCostNet)}</td>
               <td class="sr-suggest">${sugGross}</td>
@@ -3605,7 +3608,7 @@
 
                     bodyEl.innerHTML = `
           <div class="sr-scroll">
-            <table style="min-width:920px">
+            <table style="min-width:1020px">
               <thead>
                 <tr>
                   <th>Item</th>
@@ -3614,6 +3617,7 @@
                   <th>Tip share</th>
                   <th>Net goods</th>
                   <th>Net ship share</th>
+                  <th>Per pc goods only</th>
                   <th>Per pc (gross)</th>
                   <th>Per pc (net)</th>
                   <th>Suggest (gross)</th>
@@ -3626,6 +3630,7 @@
           <p style="font-size:0.72rem;color:var(--ink-soft);margin:8px 0 0">
             Gross goods = amount paid for the item. Gross ship share = share of full shipping fee. Tip share = share of rider tip.
             Net goods = share of (subtotal − voucher). Net ship share = share of (shipping − ship discount).
+            Per pc goods only = gross goods ÷ qty (excludes shipping/tip — use this to compare landed cost across sellers with very different shipping fees).
             Per pc (gross) = (gross goods + gross ship + tip) ÷ qty. Per pc (net) = (net goods + net ship + tip) ÷ qty.
             Shares are proportional to each line’s amount paid.
             ${targetNote}
