@@ -1064,8 +1064,13 @@
             }
             .cost-line .cl-amount,
             .order-item-row .oi-qty,
+            .order-item-row .oi-damaged,
             .order-item-row .oi-amount {
                 flex: 1 1 80px;
+            }
+            .order-item-row .oi-damaged {
+                flex: 0 1 72px;
+                max-width: 88px;
             }
             .cost-line input,
             .order-item-row input,
@@ -1776,7 +1781,7 @@
 
                 <div class="cost-section">
                     <div class="cost-header">
-                        <span>Line items — qty &amp; amount paid</span>
+                        <span>Line items — qty, damaged &amp; amount paid</span>
                         <button type="button" id="addOrderItem">+ Add item</button>
                     </div>
                     <div id="orderItems"></div>
@@ -2201,6 +2206,9 @@
                     // Allocate by each line's share of goods amount paid
                     const lineDetails = items.map((it) => {
                         const qty = Number(it.qty) || 0;
+                        const damagedQty = Math.max(0, Number(it.damagedQty) || 0);
+                        // Good (sellable) units — unit costs & price suggestions use this so damaged units raise true cost
+                        const goodQty = Math.max(0, qty - damagedQty);
                         const amount = Number(it.amount) || 0;
                         const share = itemsSum > 0 ? amount / itemsSum : items.length ? 1 / items.length : 0;
 
@@ -2209,18 +2217,22 @@
                         const grossShipShare = shipFee * share;
                         const tipShare = riderTip * share;
                         const grossTotal = grossGoods + grossShipShare + tipShare;
-                        const unitCostGross = qty > 0 ? grossTotal / qty : 0;
+                        // Spread full line cost over good units only (damaged still paid for)
+                        const denom = goodQty > 0 ? goodQty : qty > 0 ? qty : 0;
+                        const unitCostGross = denom > 0 ? grossTotal / denom : 0;
 
                         // Net: goods after voucher + share of net shipping (fee − discount) + share of tip
                         const netGoods = afterVoucher * share;
                         const netShipShare = netShip * share;
                         const netTotal = netGoods + netShipShare + tipShare;
-                        const unitCostNet = qty > 0 ? netTotal / qty : 0;
+                        const unitCostNet = denom > 0 ? netTotal / denom : 0;
 
                         return {
                             name: it.name || "Item",
                             productId: it.productId || null,
                             qty,
+                            damagedQty,
+                            goodQty,
                             amount,
                             share,
                             grossGoods,
@@ -3008,7 +3020,14 @@
                         card.className = "order-card";
                         card.dataset.id = order.id;
 
-                        const itemSummary = (order.items || []).map((it) => `${it.qty || 1}× ${it.name || "?"}`).join(", ");
+                        const itemSummary = (order.items || [])
+                            .map((it) => {
+                                const q = it.qty || 1;
+                                const dmg = Number(it.damagedQty) || 0;
+                                const dmgNote = dmg > 0 ? ` (${dmg} dmg)` : "";
+                                return `${q}× ${it.name || "?"}${dmgNote}`;
+                            })
+                            .join(", ");
 
                         const tm = order.targetMargin;
                         const tk = order.targetMarkup;
@@ -3073,8 +3092,14 @@
                           const hasT = (tm != null && tm !== "" && isFinite(Number(tm))) || (tk != null && tk !== "" && isFinite(Number(tk)));
                           const sugG = hasT ? fmtSuggest(it.unitCostGross, tm, tk) : "—";
                           const sugN = hasT ? fmtSuggest(it.unitCostNet, tm, tk) : "—";
+                          const dmg = Number(it.damagedQty) || 0;
+                          const good = it.goodQty != null ? it.goodQty : Math.max(0, (Number(it.qty) || 0) - dmg);
+                          const qtyLabel =
+                              dmg > 0
+                                  ? `${it.qty || 0} pcs · ${dmg} dmg · ${good} good`
+                                  : `${it.qty || 0} pcs`;
                           return `<tr>
-                    <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
+                    <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${qtyLabel}</span></td>
                     <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
                     <td class="priv-value amt">${fmtMoney(it.grossShipShare)}</td>
                     <td class="priv-value amt">${fmtMoney(it.tipShare || 0)}</td>
@@ -3703,7 +3728,8 @@
                     row.innerHTML = `
       <select class="oi-product" style="flex:1 1 130px">${productOptionsHtml(item.productId, item.name)}</select>
       <input type="text" class="oi-name" placeholder="Item name" value="${escapeHtml(item.name || "")}" style="flex:1 1 110px">
-      <input type="number" class="oi-qty" step="any" min="0" placeholder="Qty" value="${item.qty != null ? item.qty : 1}" style="flex:0 1 70px">
+      <input type="number" class="oi-qty" step="any" min="0" placeholder="Qty" title="Ordered quantity" value="${item.qty != null ? item.qty : 1}" style="flex:0 1 70px">
+      <input type="number" class="oi-damaged" step="any" min="0" placeholder="Dmg" title="Damaged quantity (excluded from unit cost)" value="${item.damagedQty != null && item.damagedQty !== "" ? item.damagedQty : ""}" style="flex:0 1 64px">
       <input type="number" class="oi-amount" step="0.01" min="0" placeholder="Amount paid" value="${amountVal != null && amountVal !== "" ? amountVal : ""}" style="flex:0 1 100px">
       <button type="button" class="oi-remove" title="Remove">✕</button>
     `;
@@ -3730,14 +3756,17 @@
                     return Array.from(orderItemsEl.querySelectorAll(".order-item-row"))
                         .map((row) => {
                             const pid = row.querySelector(".oi-product").value;
+                            const dmgEl = row.querySelector(".oi-damaged");
+                            const dmgRaw = dmgEl ? dmgEl.value : "";
                             return {
                                 productId: pid ? parseInt(pid, 10) : null,
                                 name: row.querySelector(".oi-name").value.trim(),
                                 qty: parseFloat(row.querySelector(".oi-qty").value) || 0,
+                                damagedQty: dmgRaw !== "" ? Math.max(0, parseFloat(dmgRaw) || 0) : 0,
                                 amount: parseFloat(row.querySelector(".oi-amount").value) || 0,
                             };
                         })
-                        .filter((it) => it.name || it.qty || it.amount);
+                        .filter((it) => it.name || it.qty || it.amount || it.damagedQty);
                 }
 
                 function fmtSuggest(cost, targetMargin, targetMarkup) {
@@ -3769,9 +3798,16 @@
                             const sugGross = hasTarget ? fmtSuggest(it.unitCostGross, targetMargin, targetMarkup) : "—";
                             const sugNet = hasTarget ? fmtSuggest(it.unitCostNet, targetMargin, targetMarkup) : "—";
                             const qtyN = Number(it.qty) || 0;
-                            const perPcGoodsOnly = qtyN > 0 ? (Number(it.grossGoods) || 0) / qtyN : 0;
+                            const dmg = Number(it.damagedQty) || 0;
+                            const goodN = it.goodQty != null ? Number(it.goodQty) : Math.max(0, qtyN - dmg);
+                            const denom = goodN > 0 ? goodN : qtyN > 0 ? qtyN : 0;
+                            const perPcGoodsOnly = denom > 0 ? (Number(it.grossGoods) || 0) / denom : 0;
+                            const qtyLabel =
+                                dmg > 0
+                                    ? `${qtyN} pcs · ${dmg} dmg · ${goodN} good`
+                                    : `${qtyN} pcs`;
                             return `<tr>
-              <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${it.qty || 0} pcs</span></td>
+              <td>${escapeHtml(it.name)}<br><span style="font-size:0.7rem;color:var(--ink-soft)">${qtyLabel}</span></td>
               <td class="priv-value amt">${fmtMoney(it.grossGoods)}</td>
               <td class="priv-value amt">${fmtMoney(it.grossShipShare)}</td>
               <td class="priv-value amt">${fmtMoney(it.tipShare || 0)}</td>
@@ -3816,9 +3852,9 @@
           <p style="font-size:0.72rem;color:var(--ink-soft);margin:8px 0 0">
             Gross goods = amount paid for the item. Gross ship share = share of full shipping fee. Tip share = share of rider tip.
             Net goods = share of (subtotal − voucher). Net ship share = share of (shipping − ship discount).
-            Per pc goods only = gross goods ÷ qty (excludes shipping/tip — use this to compare landed cost across sellers with very different shipping fees).
-            Per pc (gross) = (gross goods + gross ship + tip) ÷ qty. Per pc (net) = (net goods + net ship + tip) ÷ qty.
-            Shares are proportional to each line’s amount paid.
+            Per pc goods only = gross goods ÷ good qty (excludes shipping/tip — use this to compare landed cost across sellers with very different shipping fees).
+            Per pc (gross) = (gross goods + gross ship + tip) ÷ good qty. Per pc (net) = (net goods + net ship + tip) ÷ good qty.
+            Good qty = ordered qty − damaged qty (damaged units still cost you, so unit cost rises). Shares are proportional to each line’s amount paid.
             ${targetNote}
           </p>`;
                     bodyEl.querySelectorAll(".priv-value").forEach(bindPeek);
@@ -4127,7 +4163,9 @@
                         const itemsStr = (o.items || [])
                             .map((i) => {
                                 const amt = i.amount != null ? i.amount : (Number(i.qty) || 0) * (Number(i.unitPrice) || 0);
-                                return `${i.qty}x ${i.name}=${amt}`;
+                                const dmg = Number(i.damagedQty) || 0;
+                                const dmgPart = dmg > 0 ? ` dmg:${dmg}` : "";
+                                return `${i.qty}x ${i.name}=${amt}${dmgPart}`;
                             })
                             .join(" | ");
                         rows.push([
@@ -4384,16 +4422,18 @@
                                 itemsStr.split("|").forEach((part) => {
                                     const s = part.trim();
                                     // e.g. 2x Name=14
-                                    const m = s.match(/^([\d.]+)x\s*(.+?)=([\d.]+)$/);
+                                    // e.g. 2x Name=14 or 2x Name=14 dmg:1
+                                    const m = s.match(/^([\d.]+)x\s*(.+?)=([\d.]+)(?:\s*dmg:([\d.]+))?$/i);
                                     if (m) {
                                         items.push({
                                             name: m[2].trim(),
                                             qty: parseFloat(m[1]) || 0,
                                             amount: parseFloat(m[3]) || 0,
+                                            damagedQty: m[4] != null ? parseFloat(m[4]) || 0 : 0,
                                             productId: null,
                                         });
                                     } else if (s) {
-                                        items.push({ name: s, qty: 1, amount: 0, productId: null });
+                                        items.push({ name: s, qty: 1, amount: 0, damagedQty: 0, productId: null });
                                     }
                                 });
                             }
