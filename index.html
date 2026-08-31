@@ -1684,7 +1684,8 @@
                     </div>
                 </section>
                 <p class="suggest-hint" style="margin: 0 0 12px">
-                    Package pricing: cost a batch (e.g. one A4 sheet cut into pieces), split it across the pieces it makes, then see per‑piece and full‑package cost, profit, and margin.
+                    Package pricing: cost a batch (e.g. one A4 sheet cut into pieces) from manual lines or existing product recipes, split it across the pieces it makes, then see
+                    per‑piece and full‑package cost, profit, and margin.
                 </p>
                 <section id="packageList" class="product-list"></section>
                 <p id="emptyPackages" class="empty-state" hidden>
@@ -1793,8 +1794,9 @@
                         <button type="button" id="pkgAddCostLine">+ Add cost line</button>
                     </div>
                     <p class="suggest-hint" style="margin: 0 0 8px">
-                        Everything it costs to produce the <em>whole batch</em> (materials, ink, cutting/labor) — not per piece. Pick an existing product to pull in its cost × qty (e.g.
-                        1 keychain, 0.5 of an A4 photo print), or leave as manual and type a label + ₱ amount.
+                        Everything it costs to produce the <em>whole batch</em> (materials, ink, cutting/labor) — not per piece. Pick an existing <strong>recipe</strong> (a product with a
+                        material-linked cost breakdown) to pull its exact inventory consumption × qty (e.g. 1 keychain, 0.5 of an A4 photo print), or leave as manual and type a label + ₱
+                        amount.
                     </p>
                     <div id="pkgCostLines"></div>
                 </div>
@@ -3082,16 +3084,57 @@
                     return { totalCost, pieces, pricePerPiece, costPerPiece, profitPerPiece, marginPerPiece, revenue, packageProfit, packageMargin };
                 }
 
-                function productOptionsHtml(selectedId) {
+                /** Products that have at least one material-linked cost line (= have a "recipe"). */
+                function productsWithRecipes() {
+                    return state.products.filter((p) => recipeFromProduct(p).length > 0);
+                }
+
+                function pkgRecipeOptionsHtml(selectedId) {
                     let opts = `<option value="">— manual —</option>`;
-                    state.products
+                    productsWithRecipes()
                         .slice()
                         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
                         .forEach((p) => {
-                            const cost = computeTotals(p).totalCost;
-                            opts += `<option value="${p.id}" ${selectedId === p.id ? "selected" : ""}>${escapeHtml(p.name)} (cost ${fmtMoney(cost)}${p.unit ? " " + escapeHtml(p.unit) : ""})</option>`;
+                            const lines = recipeFromProduct(p);
+                            const cost = lines.reduce((s, ln) => {
+                                const mat = state.materials.find((m) => m.id === ln.materialId);
+                                return s + (mat ? (Number(mat.costPerUnit) || 0) * (Number(ln.qty) || 0) : 0);
+                            }, 0);
+                            opts += `<option value="${p.id}" ${selectedId === p.id ? "selected" : ""}>${escapeHtml(p.name)} — recipe (${lines.length} material${lines.length === 1 ? "" : "s"}, ${fmtMoney(cost)})</option>`;
                         });
                     return opts;
+                }
+
+                /** Material consumption for one package cost line that's linked to a recipe, scaled by qty. */
+                function pkgLineRecipeBreakdown(costItem) {
+                    if (!costItem || !costItem.productId) return null;
+                    const product = state.products.find((p) => p.id === costItem.productId);
+                    if (!product) return null;
+                    const qty = Number(costItem.qty) || 0;
+                    const lines = recipeFromProduct(product)
+                        .filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0)
+                        .map((ln) => {
+                            const mat = state.materials.find((m) => m.id === ln.materialId);
+                            const totalQty = (Number(ln.qty) || 0) * qty;
+                            const unitCost = mat ? Number(mat.costPerUnit) || 0 : 0;
+                            return {
+                                materialName: mat ? mat.name : "Unknown material",
+                                unit: mat ? mat.unit : "",
+                                totalQty,
+                                lineCost: unitCost * totalQty,
+                            };
+                        });
+                    return { productName: product.name, qty, lines };
+                }
+
+                /** Sum of recipe material costs for a product, scaled by qty — the "detailed" inventory-based cost. */
+                function costFromRecipe(product, qty) {
+                    const lines = recipeFromProduct(product).filter((ln) => !ln.optional && ln.materialId && Number(ln.qty) > 0);
+                    return lines.reduce((s, ln) => {
+                        const mat = state.materials.find((m) => m.id === ln.materialId);
+                        const unitCost = mat ? Number(mat.costPerUnit) || 0 : 0;
+                        return s + unitCost * (Number(ln.qty) || 0) * (Number(qty) || 0);
+                    }, 0);
                 }
 
                 function pkgAddCostLineRow(item) {
@@ -3104,10 +3147,10 @@
                     row.className = "cost-line";
                     row.style.flexWrap = "wrap";
                     row.innerHTML = `
-      <select class="pkg-cl-product" style="flex:1 1 170px" title="Use an existing product's cost, or leave as manual">${productOptionsHtml(productId)}</select>
+      <select class="pkg-cl-product" style="flex:1 1 190px" title="Pull a product's recipe (material-linked cost breakdown), or leave as manual">${pkgRecipeOptionsHtml(productId)}</select>
       <input type="text" class="pkg-cl-label" placeholder="e.g. Laminating film, photo paper, cutting" value="${escapeHtml(label)}" style="flex:1 1 150px">
-      <input type="number" class="pkg-cl-qty" step="any" min="0" placeholder="Qty" value="${qty != null && qty !== "" ? qty : ""}" style="flex:0 1 64px" title="How many of this product go into the package (e.g. 0.5 for half an A4 sheet)">
-      <input type="number" class="pkg-cl-amount" step="any" min="0" placeholder="₱ cost" value="${amount !== undefined && amount !== "" && amount != null ? amount : ""}" style="flex:0 1 96px" title="Cost of this line for the whole batch — auto-fills from product cost × qty">
+      <input type="number" class="pkg-cl-qty" step="any" min="0" placeholder="Qty" value="${qty != null && qty !== "" ? qty : ""}" style="flex:0 1 64px" title="How many of this recipe go into the package (e.g. 0.5 for half an A4 sheet)">
+      <input type="number" class="pkg-cl-amount" step="any" min="0" placeholder="₱ cost" value="${amount !== undefined && amount !== "" && amount != null ? amount : ""}" style="flex:0 1 96px" title="Cost of this line for the whole batch — auto-fills from the recipe's material cost × qty">
       <button type="button" class="cl-remove" title="Remove">✕</button>
     `;
                     row.querySelector(".cl-remove").addEventListener("click", () => {
@@ -3128,7 +3171,7 @@
                     pkgCostLinesEl.appendChild(row);
                 }
 
-                /** When a product or qty changes on a package cost row, fill label + ₱ from that product's cost × qty. */
+                /** When a recipe or qty changes on a package cost row, fill label + ₱ from that recipe's material cost × qty. */
                 function pkgAutofillCostLine(row) {
                     if (!row) return;
                     const prodSel = row.querySelector(".pkg-cl-product");
@@ -3142,12 +3185,12 @@
                     if (!product) return;
                     if (!qtyInp.value) qtyInp.value = "1";
                     const qty = parseFloat(qtyInp.value) || 0;
-                    const unitCost = computeTotals(product).totalCost;
+                    const recipeCost = costFromRecipe(product, qty);
                     if (!labelInp.value.trim() || labelInp.dataset.autoFilled === "1") {
                         labelInp.value = product.name;
                         labelInp.dataset.autoFilled = "1";
                     }
-                    amtInp.value = String(Math.round(unitCost * qty * 100) / 100);
+                    amtInp.value = String(Math.round(recipeCost * 100) / 100);
                 }
 
                 function pkgReadCostLines() {
@@ -3338,9 +3381,19 @@
               ${
                   (pkg.costItems || [])
                       .map((c) => {
-                          const prod = c.productId ? state.products.find((p) => p.id === c.productId) : null;
-                          const qtyTag = prod && c.qty ? ` <span class="tag" style="font-size:0.65rem">${fmtNum(c.qty)}× product</span>` : "";
-                          return `<li><span>${escapeHtml(c.label || "Cost item")}${qtyTag}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`;
+                          const detail = pkgLineRecipeBreakdown(c);
+                          const qtyTag = detail ? ` <span class="tag" style="font-size:0.65rem">${fmtNum(c.qty)}× recipe</span>` : "";
+                          const nested = detail
+                              ? `<ul class="cost-breakdown" style="margin:2px 0 6px 14px;opacity:0.85">${
+                                    detail.lines
+                                        .map(
+                                            (ln) =>
+                                                `<li style="font-size:0.75rem"><span>${escapeHtml(ln.materialName)} — ${fmtNum(ln.totalQty)}${escapeHtml(ln.unit || "")}</span><span class="priv-value amt">${fmtMoney(ln.lineCost)}</span></li>`,
+                                        )
+                                        .join("") || `<li style="font-size:0.75rem"><span>No material lines on this recipe</span><span></span></li>`
+                                }</ul>`
+                              : "";
+                          return `<li><span>${escapeHtml(c.label || "Cost item")}${qtyTag}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>${nested}`;
                       })
                       .join("") || "<li><span>No cost lines added</span><span></span></li>"
               }
