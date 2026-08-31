@@ -1793,7 +1793,8 @@
                         <button type="button" id="pkgAddCostLine">+ Add cost line</button>
                     </div>
                     <p class="suggest-hint" style="margin: 0 0 8px">
-                        Everything it costs to produce the <em>whole batch</em> (materials, ink, cutting/labor) — not per piece. It gets split across the pieces below.
+                        Everything it costs to produce the <em>whole batch</em> (materials, ink, cutting/labor) — not per piece. Pick an existing product to pull in its cost × qty (e.g.
+                        1 keychain, 0.5 of an A4 photo print), or leave as manual and type a label + ₱ amount.
                     </p>
                     <div id="pkgCostLines"></div>
                 </div>
@@ -3081,36 +3082,87 @@
                     return { totalCost, pieces, pricePerPiece, costPerPiece, profitPerPiece, marginPerPiece, revenue, packageProfit, packageMargin };
                 }
 
+                function productOptionsHtml(selectedId) {
+                    let opts = `<option value="">— manual —</option>`;
+                    state.products
+                        .slice()
+                        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+                        .forEach((p) => {
+                            const cost = computeTotals(p).totalCost;
+                            opts += `<option value="${p.id}" ${selectedId === p.id ? "selected" : ""}>${escapeHtml(p.name)} (cost ${fmtMoney(cost)}${p.unit ? " " + escapeHtml(p.unit) : ""})</option>`;
+                        });
+                    return opts;
+                }
+
                 function pkgAddCostLineRow(item) {
                     item = item || {};
                     const label = item.label != null ? item.label : "";
                     const amount = item.amount;
+                    const productId = item.productId || null;
+                    const qty = item.qty;
                     const row = document.createElement("div");
                     row.className = "cost-line";
                     row.style.flexWrap = "wrap";
                     row.innerHTML = `
-      <input type="text" class="pkg-cl-label" placeholder="e.g. Laminating film, photo paper, cutting" value="${escapeHtml(label)}" style="flex:1 1 200px">
-      <input type="number" class="pkg-cl-amount" step="any" min="0" placeholder="₱ cost" value="${amount !== undefined && amount !== "" && amount != null ? amount : ""}" style="flex:0 1 110px" title="Cost of this line for the whole batch">
+      <select class="pkg-cl-product" style="flex:1 1 170px" title="Use an existing product's cost, or leave as manual">${productOptionsHtml(productId)}</select>
+      <input type="text" class="pkg-cl-label" placeholder="e.g. Laminating film, photo paper, cutting" value="${escapeHtml(label)}" style="flex:1 1 150px">
+      <input type="number" class="pkg-cl-qty" step="any" min="0" placeholder="Qty" value="${qty != null && qty !== "" ? qty : ""}" style="flex:0 1 64px" title="How many of this product go into the package (e.g. 0.5 for half an A4 sheet)">
+      <input type="number" class="pkg-cl-amount" step="any" min="0" placeholder="₱ cost" value="${amount !== undefined && amount !== "" && amount != null ? amount : ""}" style="flex:0 1 96px" title="Cost of this line for the whole batch — auto-fills from product cost × qty">
       <button type="button" class="cl-remove" title="Remove">✕</button>
     `;
                     row.querySelector(".cl-remove").addEventListener("click", () => {
                         row.remove();
                         pkgUpdatePreview();
                     });
-                    row.querySelectorAll("input").forEach((inp) => {
-                        inp.addEventListener("input", pkgUpdatePreview);
-                        inp.addEventListener("change", pkgUpdatePreview);
+                    const onLineChange = (e) => {
+                        const t = e.target;
+                        if (t && (t.classList.contains("pkg-cl-product") || t.classList.contains("pkg-cl-qty"))) {
+                            pkgAutofillCostLine(row);
+                        }
+                        pkgUpdatePreview();
+                    };
+                    row.querySelectorAll("input, select").forEach((inp) => {
+                        inp.addEventListener("input", onLineChange);
+                        inp.addEventListener("change", onLineChange);
                     });
                     pkgCostLinesEl.appendChild(row);
                 }
 
+                /** When a product or qty changes on a package cost row, fill label + ₱ from that product's cost × qty. */
+                function pkgAutofillCostLine(row) {
+                    if (!row) return;
+                    const prodSel = row.querySelector(".pkg-cl-product");
+                    const qtyInp = row.querySelector(".pkg-cl-qty");
+                    const labelInp = row.querySelector(".pkg-cl-label");
+                    const amtInp = row.querySelector(".pkg-cl-amount");
+                    if (!prodSel || !qtyInp || !amtInp) return;
+                    const productId = prodSel.value ? parseInt(prodSel.value, 10) : null;
+                    if (!productId) return;
+                    const product = state.products.find((p) => p.id === productId);
+                    if (!product) return;
+                    if (!qtyInp.value) qtyInp.value = "1";
+                    const qty = parseFloat(qtyInp.value) || 0;
+                    const unitCost = computeTotals(product).totalCost;
+                    if (!labelInp.value.trim() || labelInp.dataset.autoFilled === "1") {
+                        labelInp.value = product.name;
+                        labelInp.dataset.autoFilled = "1";
+                    }
+                    amtInp.value = String(Math.round(unitCost * qty * 100) / 100);
+                }
+
                 function pkgReadCostLines() {
                     return Array.from(pkgCostLinesEl.querySelectorAll(".cost-line"))
-                        .map((row) => ({
-                            label: row.querySelector(".pkg-cl-label").value.trim(),
-                            amount: parseFloat(row.querySelector(".pkg-cl-amount").value) || 0,
-                        }))
-                        .filter((c) => c.label || c.amount);
+                        .map((row) => {
+                            const prodVal = row.querySelector(".pkg-cl-product") ? row.querySelector(".pkg-cl-product").value : "";
+                            const qtyRaw = row.querySelector(".pkg-cl-qty") ? row.querySelector(".pkg-cl-qty").value : "";
+                            return {
+                                label: row.querySelector(".pkg-cl-label").value.trim(),
+                                amount: parseFloat(row.querySelector(".pkg-cl-amount").value) || 0,
+                                productId: prodVal ? parseInt(prodVal, 10) : null,
+                                qty: qtyRaw !== "" ? parseFloat(qtyRaw) : null,
+                            };
+                        })
+                        .filter((c) => c.label || c.amount || c.productId);
                 }
 
                 function pkgUpdatePreview() {
@@ -3285,7 +3337,11 @@
             <ul class="cost-breakdown">
               ${
                   (pkg.costItems || [])
-                      .map((c) => `<li><span>${escapeHtml(c.label || "Cost item")}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`)
+                      .map((c) => {
+                          const prod = c.productId ? state.products.find((p) => p.id === c.productId) : null;
+                          const qtyTag = prod && c.qty ? ` <span class="tag" style="font-size:0.65rem">${fmtNum(c.qty)}× product</span>` : "";
+                          return `<li><span>${escapeHtml(c.label || "Cost item")}${qtyTag}</span><span class="priv-value amt">${fmtMoney(c.amount)}</span></li>`;
+                      })
                       .join("") || "<li><span>No cost lines added</span><span></span></li>"
               }
               <li><span><strong>Total package cost</strong></span><span class="priv-value amt"><strong>${fmtMoney(t.totalCost)}</strong></span></li>
