@@ -3228,10 +3228,12 @@
                 const packageModal = document.getElementById("packageModal");
                 const pkgCostLinesEl = document.getElementById("pkgCostLines");
 
-                function openPackageForm(pkg) {
-                    state.editingPackageId = pkg ? pkg.id : null;
-                    document.getElementById("pkgFormTitle").textContent = pkg ? "Edit package" : "Add package";
-                    document.getElementById("pkgName").value = pkg ? pkg.name : "";
+                function openPackageForm(pkg, opts) {
+                    const asCopy = opts && opts.asCopy;
+                    // Copy opens the form pre-filled as a *new* package — no auto-save.
+                    state.editingPackageId = pkg && !asCopy ? pkg.id : null;
+                    document.getElementById("pkgFormTitle").textContent = asCopy ? "Copy package" : pkg ? "Edit package" : "Add package";
+                    document.getElementById("pkgName").value = pkg ? (asCopy ? pkg.name + " (copy)" : pkg.name) : "";
                     document.getElementById("pkgPieces").value = pkg ? pkg.pieces : "";
                     document.getElementById("pkgPriceWhole").value = pkg ? pkg.pricePerPackage : "";
                     pkgCostLinesEl.innerHTML = "";
@@ -3378,6 +3380,7 @@
             <div class="card-actions">
               <button type="button" class="expand-btn">Details ▾</button>
               <button type="button" class="edit-btn">Edit</button>
+              <button type="button" class="copy-btn">Copy</button>
               <button type="button" class="delete-btn">Delete</button>
             </div>
           </div>
@@ -3418,6 +3421,7 @@
                         });
 
                         card.querySelector(".edit-btn").addEventListener("click", () => openPackageForm(pkg));
+                        card.querySelector(".copy-btn").addEventListener("click", () => openPackageForm(pkg, { asCopy: true }));
 
                         card.querySelector(".delete-btn").addEventListener("click", async () => {
                             if (confirm(`Delete "${pkg.name}"? This can't be undone.`)) {
